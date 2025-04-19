@@ -67,8 +67,9 @@ const ExamPage = ({ isPreview = false }: ExamPageProps) => {
   }, [id, getExamWithQuestions, questions, navigate]);
 
   const handleStartExam = async () => {
-    if (!exam || (!authState.user && !isPreview)) return;
+    if (!exam) return;
 
+    // For preview mode, we don't need to check auth
     if (isPreview) {
       // For preview mode, create a mock session without saving to database
       const mockSession: ExamSession = {
@@ -79,9 +80,16 @@ const ExamPage = ({ isPreview = false }: ExamPageProps) => {
         answers: [],
         currentQuestionIndex: 0,
         expiresAt: new Date(Date.now() + exam.timeLimit * 60 * 1000),
-        status: ExamSessionStatus.IN_PROGRESS, // Add the missing status property
+        status: ExamSessionStatus.IN_PROGRESS,
       };
       setExamSession(mockSession);
+      return;
+    }
+
+    // For regular mode, check auth
+    if (!authState.user) {
+      toast.error("You must be logged in to take an exam");
+      navigate("/login", { state: { from: `/candidate/exams/${id}` } });
       return;
     }
 
@@ -241,7 +249,9 @@ const ExamPage = ({ isPreview = false }: ExamPageProps) => {
               </ul>
             </div>
             <div className="mt-6 flex justify-end">
-              <Button onClick={handleStartExam}>Start Exam</Button>
+              <Button onClick={handleStartExam}>
+                {isPreview ? "Start Preview" : "Start Exam"}
+              </Button>
             </div>
           </div>
         </div>
@@ -257,6 +267,7 @@ const ExamPage = ({ isPreview = false }: ExamPageProps) => {
         onSaveAnswer={handleSaveAnswer}
         onNavigate={handleNavigate}
         onSubmit={handleSubmit}
+        isPreview={isPreview}
       />
     </CandidateLayout>
   );

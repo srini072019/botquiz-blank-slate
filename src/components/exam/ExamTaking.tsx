@@ -4,6 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import { ExamSession } from "@/types/exam-session.types";
 import { Question, QuestionType } from "@/types/question.types";
 import { ArrowLeft, ArrowRight, Clock, Flag } from "lucide-react";
@@ -28,6 +37,7 @@ interface ExamTakingProps {
   onSaveAnswer: (questionId: string, selectedOptions: string[]) => Promise<boolean>;
   onNavigate: (newIndex: number) => Promise<boolean>;
   onSubmit: () => void;
+  isPreview?: boolean;
 }
 
 const ExamTaking = ({
@@ -36,6 +46,7 @@ const ExamTaking = ({
   onSaveAnswer,
   onNavigate,
   onSubmit,
+  isPreview = false,
 }: ExamTakingProps) => {
   const navigate = useNavigate();
   const [timeLeft, setTimeLeft] = useState<string>("");
@@ -106,6 +117,12 @@ const ExamTaking = ({
     }
   };
 
+  const handleNavigateToQuestion = async (index: number) => {
+    if (index >= 0 && index < questions.length) {
+      await onNavigate(index);
+    }
+  };
+
   const handleSubmit = () => {
     setIsSubmitDialogOpen(true);
   };
@@ -113,6 +130,83 @@ const ExamTaking = ({
   const confirmSubmit = () => {
     onSubmit();
     setIsSubmitDialogOpen(false);
+  };
+
+  const renderPagination = () => {
+    // For fewer questions, show all page links
+    if (questions.length <= 10) {
+      return (
+        <PaginationContent>
+          {questions.map((_, index) => (
+            <PaginationItem key={index}>
+              <PaginationLink 
+                isActive={index === examSession.currentQuestionIndex}
+                onClick={() => handleNavigateToQuestion(index)}
+              >
+                {index + 1}
+              </PaginationLink>
+            </PaginationItem>
+          ))}
+        </PaginationContent>
+      );
+    }
+    
+    // For more questions, show a subset with ellipsis
+    const currentIndex = examSession.currentQuestionIndex;
+    const lastIndex = questions.length - 1;
+    
+    return (
+      <PaginationContent>
+        <PaginationItem>
+          <PaginationLink 
+            isActive={currentIndex === 0}
+            onClick={() => handleNavigateToQuestion(0)}
+          >
+            1
+          </PaginationLink>
+        </PaginationItem>
+        
+        {currentIndex > 3 && (
+          <PaginationItem>
+            <PaginationEllipsis />
+          </PaginationItem>
+        )}
+        
+        {Array.from({ length: 5 }, (_, i) => {
+          const pageIndex = Math.max(1, Math.min(lastIndex - 1, currentIndex - 2 + i));
+          // Skip first and last page as they're shown separately
+          if (pageIndex === 0 || pageIndex === lastIndex) return null;
+          
+          return (
+            <PaginationItem key={pageIndex}>
+              <PaginationLink 
+                isActive={pageIndex === currentIndex}
+                onClick={() => handleNavigateToQuestion(pageIndex)}
+              >
+                {pageIndex + 1}
+              </PaginationLink>
+            </PaginationItem>
+          );
+        }).filter(Boolean)}
+        
+        {currentIndex < lastIndex - 3 && (
+          <PaginationItem>
+            <PaginationEllipsis />
+          </PaginationItem>
+        )}
+        
+        {lastIndex > 0 && (
+          <PaginationItem>
+            <PaginationLink 
+              isActive={currentIndex === lastIndex}
+              onClick={() => handleNavigateToQuestion(lastIndex)}
+            >
+              {lastIndex + 1}
+            </PaginationLink>
+          </PaginationItem>
+        )}
+      </PaginationContent>
+    );
   };
 
   if (!currentQuestion) {
@@ -133,7 +227,7 @@ const ExamTaking = ({
 
       <Progress value={progress} className="mb-6" />
 
-      <Card>
+      <Card className="mb-6">
         <CardHeader>
           <CardTitle className="text-xl">{currentQuestion.text}</CardTitle>
           <CardDescription>
@@ -175,7 +269,7 @@ const ExamTaking = ({
                 className="mx-2"
                 disabled={examSession.answers.length === 0}
               >
-                <Flag className="mr-2 h-4 w-4" /> Submit Exam
+                <Flag className="mr-2 h-4 w-4" /> {isPreview ? "End Preview" : "Submit Exam"}
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
@@ -183,13 +277,13 @@ const ExamTaking = ({
                 <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                 <AlertDialogDescription>
                   You have answered {examSession.answers.length} out of {questions.length} questions.
-                  Once submitted, you won't be able to make changes.
+                  {!isPreview && " Once submitted, you won't be able to make changes."}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <AlertDialogAction onClick={confirmSubmit}>
-                  Submit Exam
+                  {isPreview ? "End Preview" : "Submit Exam"}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -201,11 +295,46 @@ const ExamTaking = ({
             </Button>
           ) : (
             <Button variant="default" onClick={handleSubmit}>
-              Review & Submit
+              {isPreview ? "End Preview" : "Review & Submit"}
             </Button>
           )}
         </CardFooter>
       </Card>
+
+      <Pagination className="mb-6">
+        <PaginationContent>
+          <PaginationItem>
+            <PaginationPrevious 
+              onClick={() => handleNavigation("prev")}
+              disabled={examSession.currentQuestionIndex === 0}
+            />
+          </PaginationItem>
+          
+          {renderPagination()}
+          
+          <PaginationItem>
+            <PaginationNext 
+              onClick={() => handleNavigation("next")}
+              disabled={examSession.currentQuestionIndex === questions.length - 1}
+            />
+          </PaginationItem>
+        </PaginationContent>
+      </Pagination>
+
+      <div className="flex flex-wrap justify-center gap-2 mt-4">
+        {questions.map((_, index) => (
+          <Button
+            key={index}
+            variant={index === examSession.currentQuestionIndex ? "default" : 
+              (examSession.answers.some(a => a.questionId === questions[index].id) ? "outline" : "ghost")}
+            size="sm"
+            className="w-10 h-10 p-0"
+            onClick={() => handleNavigateToQuestion(index)}
+          >
+            {index + 1}
+          </Button>
+        ))}
+      </div>
     </div>
   );
 };
