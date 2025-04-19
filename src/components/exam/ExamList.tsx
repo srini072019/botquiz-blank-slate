@@ -137,16 +137,6 @@ const ExamList = ({ courseId, courses, questions }: ExamListProps) => {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold">Exams</h2>
-        <Button size="sm" className="flex items-center gap-1" asChild>
-          <Link to="/instructor/exams/create">
-            <Plus size={16} />
-            <span>Create Exam</span>
-          </Link>
-        </Button>
-      </div>
-
       <Tabs defaultValue="drafts" className="w-full">
         <TabsList className="mb-4">
           <TabsTrigger value="drafts">Drafts ({draftExams.length})</TabsTrigger>
