@@ -1,8 +1,9 @@
+
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Edit, Plus, Trash2, Clock, Archive, FileText, Calendar } from "lucide-react";
+import { Edit, Plus, Trash2, Clock, Archive, FileText, Calendar, Eye } from "lucide-react";
 import { Exam, ExamStatus } from "@/types/exam.types";
 import { useExams } from "@/hooks/useExams";
 import { Course } from "@/types/course.types";
@@ -18,6 +19,7 @@ interface ExamListProps {
 }
 
 const ExamList = ({ courseId, courses, questions }: ExamListProps) => {
+  const navigate = useNavigate();
   const { exams: allExams, deleteExam, publishExam, archiveExam, isLoading } = useExams(courseId);
 
   const exams = allExams.filter(exam => exam.courseId === courseId);
@@ -71,6 +73,14 @@ const ExamList = ({ courseId, courses, questions }: ExamListProps) => {
               <CardDescription>{exam.description}</CardDescription>
             </div>
             <div className="flex space-x-2">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => navigate(`/instructor/exams/${exam.id}/preview`)}
+                title="Preview Exam"
+              >
+                <Eye size={16} />
+              </Button>
               {exam.status === ExamStatus.DRAFT && (
                 <>
                   <Button variant="ghost" size="icon" asChild>

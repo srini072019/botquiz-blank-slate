@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuestions } from "@/hooks/useQuestions";
@@ -16,7 +15,11 @@ import { Exam } from "@/types/exam.types";
 import { Loader2, Clock, FileText } from "lucide-react";
 import { format } from "date-fns";
 
-const ExamPage = () => {
+interface ExamPageProps {
+  isPreview?: boolean;
+}
+
+const ExamPage = ({ isPreview = false }: ExamPageProps) => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { authState } = useAuth();
@@ -63,7 +66,22 @@ const ExamPage = () => {
   }, [id, getExamWithQuestions, questions, navigate]);
 
   const handleStartExam = async () => {
-    if (!exam || !authState.user) return;
+    if (!exam || (!authState.user && !isPreview)) return;
+
+    if (isPreview) {
+      // For preview mode, create a mock session without saving to database
+      const mockSession: ExamSession = {
+        id: 'preview',
+        examId: exam.id,
+        candidateId: 'preview',
+        startedAt: new Date(),
+        answers: [],
+        currentQuestionIndex: 0,
+        expiresAt: new Date(Date.now() + exam.timeLimit * 60 * 1000),
+      };
+      setExamSession(mockSession);
+      return;
+    }
 
     try {
       const session = await startExam(
@@ -84,11 +102,35 @@ const ExamPage = () => {
   const handleSaveAnswer = async (questionId: string, selectedOptions: string[]) => {
     if (!examSession) return false;
     
+    if (isPreview) {
+      // For preview mode, just update the local state
+      setExamSession(prev => {
+        if (!prev) return prev;
+        const answers = [...prev.answers];
+        const existingIndex = answers.findIndex(a => a.questionId === questionId);
+        
+        if (existingIndex >= 0) {
+          answers[existingIndex] = { questionId, selectedOptions };
+        } else {
+          answers.push({ questionId, selectedOptions });
+        }
+        
+        return { ...prev, answers };
+      });
+      return true;
+    }
+    
     return await saveAnswer(examSession.id, questionId, selectedOptions);
   };
 
   const handleNavigate = async (newIndex: number) => {
     if (!examSession) return false;
+    
+    if (isPreview) {
+      // For preview mode, just update the local state
+      setExamSession(prev => prev ? { ...prev, currentQuestionIndex: newIndex } : null);
+      return true;
+    }
     
     const success = await navigateQuestion(examSession.id, newIndex);
     if (success) {
@@ -101,8 +143,15 @@ const ExamPage = () => {
     return success;
   };
 
-  const handleSubmitExam = async () => {
+  const handleSubmit = async () => {
     if (!examSession || !exam) return;
+    
+    if (isPreview) {
+      // For preview mode, just show a message and return to the exam list
+      toast.success("Preview completed");
+      navigate("/instructor/exams");
+      return;
+    }
     
     try {
       const result = await submitExam(examSession.id, exam, examQuestions);
@@ -205,7 +254,7 @@ const ExamPage = () => {
         questions={examQuestions}
         onSaveAnswer={handleSaveAnswer}
         onNavigate={handleNavigate}
-        onSubmit={handleSubmitExam}
+        onSubmit={handleSubmit}
       />
     </CandidateLayout>
   );
