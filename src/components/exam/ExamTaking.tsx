@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -48,6 +47,7 @@ const ExamTaking = ({
   onSubmit,
   isPreview = false,
 }: ExamTakingProps) => {
+  
   const navigate = useNavigate();
   const [timeLeft, setTimeLeft] = useState<string>("");
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
@@ -213,6 +213,10 @@ const ExamTaking = ({
     return <div>Question not found</div>;
   }
 
+  // Fixed: Used conditional rendering for disabled pagination links instead of disabled prop
+  const isPreviousDisabled = examSession.currentQuestionIndex === 0;
+  const isNextDisabled = examSession.currentQuestionIndex === questions.length - 1;
+
   return (
     <div className="container mx-auto py-6">
       <div className="flex justify-between items-center mb-4">
@@ -304,19 +308,27 @@ const ExamTaking = ({
       <Pagination className="mb-6">
         <PaginationContent>
           <PaginationItem>
-            <PaginationPrevious 
-              onClick={() => handleNavigation("prev")}
-              disabled={examSession.currentQuestionIndex === 0}
-            />
+            {isPreviousDisabled ? (
+              <span className="flex h-10 items-center justify-center gap-1 pl-2.5 pr-4 py-2 text-sm text-muted-foreground opacity-50">
+                <ChevronLeft className="h-4 w-4" />
+                <span>Previous</span>
+              </span>
+            ) : (
+              <PaginationPrevious onClick={() => handleNavigation("prev")} />
+            )}
           </PaginationItem>
           
           {renderPagination()}
           
           <PaginationItem>
-            <PaginationNext 
-              onClick={() => handleNavigation("next")}
-              disabled={examSession.currentQuestionIndex === questions.length - 1}
-            />
+            {isNextDisabled ? (
+              <span className="flex h-10 items-center justify-center gap-1 pl-4 pr-2.5 py-2 text-sm text-muted-foreground opacity-50">
+                <span>Next</span>
+                <ChevronRight className="h-4 w-4" />
+              </span>
+            ) : (
+              <PaginationNext onClick={() => handleNavigation("next")} />
+            )}
           </PaginationItem>
         </PaginationContent>
       </Pagination>
@@ -338,5 +350,8 @@ const ExamTaking = ({
     </div>
   );
 };
+
+// Add missing import for icons used in the conditional rendering
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export default ExamTaking;
