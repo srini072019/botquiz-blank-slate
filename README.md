@@ -1,73 +1,105 @@
-# Welcome to your Lovable project
 
-## Project info
+# Assessify - Online MCQ Exam Platform
 
-**URL**: https://lovable.dev/projects/de2f52cd-4c0e-4496-bc78-c4fe1e1bad11
+## Project Overview
+Assessify is a modern web application built with Vite, React, Tailwind CSS, and ShadCN UI. It serves as an online MCQ (Multiple Choice Questions) exam platform that is fully mobile-ready and designed for educational institutions and organizations.
 
-## How can I edit this code?
+## Features
 
-There are several ways of editing your application.
+The application supports three user roles:
 
-**Use Lovable**
+1. **Admin**
+   - Manage users (instructors and candidates)
+   - Oversee courses, subjects, exams
+   - View statistics and reports
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/de2f52cd-4c0e-4496-bc78-c4fe1e1bad11) and start prompting.
+2. **Instructors**
+   - Create and manage courses and subjects
+   - Build question banks
+   - Create and configure exams
+   - Review exam results
 
-Changes made via Lovable will be committed automatically to this repo.
+3. **Candidates**
+   - Enroll in courses
+   - Take exams
+   - View results and progress
 
-**Use your preferred IDE**
+## Technical Stack
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- **Frontend Framework**: React with TypeScript
+- **Build Tool**: Vite
+- **CSS Framework**: Tailwind CSS
+- **UI Components**: ShadCN UI
+- **Routing**: React Router
+- **State Management**: React Query
+- **Future Database**: Supabase (planned integration)
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## Development Roadmap
 
-Follow these steps:
+### Phase 1: Core Structure & Authentication
+- [x] Project setup with Vite, React, TypeScript
+- [x] UI foundation with Tailwind CSS and ShadCN
+- [x] User interfaces for all three roles
+- [ ] Authentication with Supabase
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### Phase 2: Course & Subject Management
+- [ ] Course CRUD operations
+- [ ] Subject CRUD operations
+- [ ] Course enrollment system
+- [ ] Admin and instructor dashboards
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### Phase 3: Question Bank & Exam System
+- [ ] Question bank creation and management
+- [ ] Exam creation and configuration
+- [ ] Exam taking interface
+- [ ] Result calculation and display
 
-# Step 3: Install the necessary dependencies.
-npm i
+### Phase 4: Advanced Features
+- [ ] Analytics and reporting
+- [ ] Notifications system
+- [ ] Export functionality
+- [ ] Mobile optimizations
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+## Getting Started
 
-**Edit a file directly in GitHub**
+1. **Clone the repository**
+   ```
+   git clone [repository-url]
+   cd assessify
+   ```
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+2. **Install dependencies**
+   ```
+   npm install
+   ```
 
-**Use GitHub Codespaces**
+3. **Start the development server**
+   ```
+   npm run dev
+   ```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+4. **Build for production**
+   ```
+   npm run build
+   ```
 
-## What technologies are used for this project?
+## Project Structure
 
-This project is built with:
+The project follows a component-based architecture with a clear separation of concerns:
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+- `src/components`: Reusable UI components
+- `src/pages`: Individual page components
+- `src/layouts`: Layout wrappers for different sections
+- `src/hooks`: Custom React hooks
+- `src/services`: API service functions
+- `src/types`: TypeScript type definitions
+- `src/constants`: Application constants
+- `src/utils`: Utility functions
 
-## How can I deploy this project?
+## Contributing
 
-Simply open [Lovable](https://lovable.dev/projects/de2f52cd-4c0e-4496-bc78-c4fe1e1bad11) and click on Share -> Publish.
+Please read our contribution guidelines before submitting pull requests.
 
-## Can I connect a custom domain to my Lovable project?
+## License
 
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+This project is licensed under the MIT License.
