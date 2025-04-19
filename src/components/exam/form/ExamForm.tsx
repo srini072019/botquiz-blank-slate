@@ -14,6 +14,7 @@ import { ExamFormData, ExamStatus } from "@/types/exam.types";
 import ExamHeaderFields from "./ExamHeaderFields";
 import ExamSettingsFields from "./ExamSettingsFields";
 import ExamDateFields from "./ExamDateFields";
+import ExamDescriptionField from "./ExamDescriptionField";
 import ExamQuestionSelection from "./ExamQuestionSelection";
 import { useQuestionSelection } from "@/hooks/useQuestionSelection";
 import { examSchema } from "@/components/exam/form/examSchema";
