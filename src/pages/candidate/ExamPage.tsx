@@ -21,7 +21,7 @@ interface ExamPageProps {
 }
 
 const ExamPage = ({ isPreview = false }: ExamPageProps) => {
-  const { id } = useParams<{ id: string }>();
+  const { examId } = useParams<{ examId: string }>();
   const navigate = useNavigate();
   const { authState } = useAuth();
   const { getExamWithQuestions } = useExams();
@@ -42,10 +42,10 @@ const ExamPage = ({ isPreview = false }: ExamPageProps) => {
 
   useEffect(() => {
     const loadExam = async () => {
-      if (!id) return;
+      if (!examId) return;
       
       try {
-        const { exam: examData, examQuestions: examQuestionsList } = getExamWithQuestions(id, questions);
+        const { exam: examData, examQuestions: examQuestionsList } = getExamWithQuestions(examId, questions);
         
         if (!examData) {
           toast.error("Exam not found");
@@ -64,7 +64,15 @@ const ExamPage = ({ isPreview = false }: ExamPageProps) => {
     };
 
     loadExam();
-  }, [id, getExamWithQuestions, questions, navigate]);
+  }, [examId, getExamWithQuestions, questions, navigate]);
+
+  // Check authentication if not in preview mode
+  useEffect(() => {
+    if (!isPreview && !authState.isLoading && !authState.isAuthenticated) {
+      toast.error("You must be logged in to access this page");
+      navigate("/login", { state: { from: `/candidate/exams/${examId}` } });
+    }
+  }, [authState.isAuthenticated, authState.isLoading, isPreview, examId, navigate]);
 
   const handleStartExam = async () => {
     if (!exam) return;
@@ -89,7 +97,7 @@ const ExamPage = ({ isPreview = false }: ExamPageProps) => {
     // For regular mode, check auth
     if (!authState.user) {
       toast.error("You must be logged in to take an exam");
-      navigate("/login", { state: { from: `/candidate/exams/${id}` } });
+      navigate("/login", { state: { from: `/candidate/exams/${examId}` } });
       return;
     }
 

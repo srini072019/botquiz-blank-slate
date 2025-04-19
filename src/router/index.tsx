@@ -1,3 +1,4 @@
+
 import { RouteObject } from "react-router-dom";
 import Index from "@/pages/Index";
 import NotFound from "@/pages/NotFound";
@@ -96,6 +97,10 @@ const routes: RouteObject[] = [
     path: "/instructor/exams/:examId/edit",
     element: <EditExam />,
   },
+  {
+    path: "/instructor/exams/:examId/preview",
+    element: <ExamPage isPreview={true} />,
+  },
   
   // Candidate
   {
@@ -125,12 +130,6 @@ const routes: RouteObject[] = [
   {
     path: "/courses/:courseId",
     element: <CourseDetails />,
-  },
-  
-  // Add the preview route
-  {
-    path: "/instructor/exams/:examId/preview",
-    element: <ExamPage isPreview={true} />,
   },
 ];
 
