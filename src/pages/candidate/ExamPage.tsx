@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuestions } from "@/hooks/useQuestions";
@@ -9,7 +10,7 @@ import ExamResults from "@/components/exam/ExamResults";
 import CandidateLayout from "@/layouts/CandidateLayout";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { ExamResult, ExamSession } from "@/types/exam-session.types";
+import { ExamResult, ExamSession, ExamSessionStatus } from "@/types/exam-session.types";
 import { Question } from "@/types/question.types";
 import { Exam } from "@/types/exam.types";
 import { Loader2, Clock, FileText } from "lucide-react";
@@ -78,6 +79,7 @@ const ExamPage = ({ isPreview = false }: ExamPageProps) => {
         answers: [],
         currentQuestionIndex: 0,
         expiresAt: new Date(Date.now() + exam.timeLimit * 60 * 1000),
+        status: ExamSessionStatus.IN_PROGRESS, // Add the missing status property
       };
       setExamSession(mockSession);
       return;
