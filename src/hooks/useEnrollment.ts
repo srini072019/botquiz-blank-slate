@@ -76,35 +76,30 @@ export const useEnrollment = () => {
     try {
       console.log("Enrolling participants with emails:", emails);
       
-      // First, fetch the user IDs based on the emails
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, display_name')
-        .in('id', 
-          supabase
-            .from('auth.users')
-            .select('id')
-            .in('email', emails)
-        );
+      // Query eligible_candidates view which contains user emails
+      const { data: candidates, error: candidatesError } = await supabase
+        .from('eligible_candidates')
+        .select('id, display_name, email')
+        .in('email', emails);
 
-      if (profilesError) {
-        console.error("Error fetching profiles:", profilesError);
-        throw profilesError;
+      if (candidatesError) {
+        console.error("Error fetching candidates:", candidatesError);
+        throw candidatesError;
       }
 
-      if (!profiles || profiles.length === 0) {
+      if (!candidates || candidates.length === 0) {
         return {
           success: false,
           message: "No valid users found for the provided emails"
         };
       }
 
-      console.log("Found profiles:", profiles);
+      console.log("Found candidates:", candidates);
 
       // Create enrollment records for each user
-      const enrollments = profiles.map(profile => ({
+      const enrollments = candidates.map(candidate => ({
         course_id: courseId,
-        user_id: profile.id,
+        user_id: candidate.id,
         enrolled_by: authState.user!.id,
         enrolled_at: new Date().toISOString()
       }));
@@ -118,10 +113,10 @@ export const useEnrollment = () => {
         throw enrollmentError;
       }
       
-      toast.success(`Successfully enrolled ${profiles.length} participant(s)`);
+      toast.success(`Successfully enrolled ${candidates.length} participant(s)`);
       return { 
         success: true,
-        message: `Successfully enrolled ${profiles.length} participant(s)`
+        message: `Successfully enrolled ${candidates.length} participant(s)`
       };
     } catch (error) {
       console.error("Error enrolling participants:", error);
