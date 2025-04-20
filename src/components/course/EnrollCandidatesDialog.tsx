@@ -7,7 +7,7 @@ import { useExamCandidates } from "@/hooks/useExamCandidates";
 import { useEnrollment } from "@/hooks/useEnrollment";
 import { toast } from "sonner";
 import { Loader2, AlertCircle } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert-dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface EnrollCandidatesDialogProps {
   courseId: string;
