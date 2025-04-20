@@ -1,6 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { CalendarCheck, Clock } from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface UpcomingExamProps {
   title: string;
@@ -45,8 +46,11 @@ const UpcomingExam = ({ title, course, date, duration, status }: UpcomingExamPro
       </div>
       <div className="mt-4">
         {status === 'available' ? (
-          <Button className="w-full bg-assessify-primary hover:bg-assessify-primary/90">
-            Take Exam
+          <Button 
+            className="w-full bg-assessify-primary hover:bg-assessify-primary/90"
+            asChild
+          >
+            <Link to={`/candidate/exams`}>Take Exam</Link>
           </Button>
         ) : status === 'scheduled' ? (
           <Button variant="outline" className="w-full">

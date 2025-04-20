@@ -49,7 +49,7 @@ const ExamsList = () => {
         if (error) throw error;
 
         const formattedExams = data
-          .filter(item => item.exam)
+          .filter(item => item.exam) // Filter out any null exam values
           .map(item => ({
             id: item.exam.id,
             title: item.exam.title,
@@ -62,6 +62,7 @@ const ExamsList = () => {
           }));
 
         setExams(formattedExams);
+        console.log("Fetched exams:", formattedExams);
       } catch (error) {
         console.error('Error fetching exams:', error);
       } finally {
