@@ -14,9 +14,15 @@ const EnrolledCourses = () => {
 
   useEffect(() => {
     const fetchCourses = async () => {
-      const enrolledCourses = await getEnrolledCourses();
-      setCourses(enrolledCourses);
-      setLoading(false);
+      try {
+        const enrolledCourses = await getEnrolledCourses();
+        setCourses(Array.isArray(enrolledCourses) ? enrolledCourses : []);
+      } catch (error) {
+        console.error("Error fetching enrolled courses:", error);
+        setCourses([]);
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchCourses();
@@ -30,7 +36,7 @@ const EnrolledCourses = () => {
     );
   }
 
-  if (courses.length === 0) {
+  if (!courses || courses.length === 0) {
     return (
       <div className="text-center py-12 bg-white rounded-lg shadow">
         <h2 className="text-xl font-bold text-gray-900 mb-2">No Courses Available</h2>

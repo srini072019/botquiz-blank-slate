@@ -10,6 +10,7 @@ export const useExamCandidates = (examId: string) => {
   const [isLoading, setIsLoading] = useState(false);
 
   const fetchEligibleCandidates = useCallback(async () => {
+    setIsLoading(true);
     try {
       const { data, error } = await supabase
         .from('eligible_candidates')
@@ -18,16 +19,18 @@ export const useExamCandidates = (examId: string) => {
       if (error) throw error;
       
       // Transform the data to match the ExamCandidate type
-      const formattedCandidates: ExamCandidate[] = data.map(candidate => ({
+      const formattedCandidates: ExamCandidate[] = data ? data.map(candidate => ({
         id: candidate.id || '',
         email: candidate.email || '',
         displayName: candidate.display_name || null
-      }));
+      })) : [];
       
       setCandidates(formattedCandidates);
     } catch (error) {
       console.error('Error fetching candidates:', error);
       toast.error('Failed to load eligible candidates');
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
@@ -41,7 +44,7 @@ export const useExamCandidates = (examId: string) => {
         .eq('exam_id', examId);
 
       if (error) throw error;
-      setAssignedCandidates(data.map(assignment => assignment.candidate_id));
+      setAssignedCandidates(data ? data.map(assignment => assignment.candidate_id) : []);
     } catch (error) {
       console.error('Error fetching assigned candidates:', error);
       toast.error('Failed to load assigned candidates');

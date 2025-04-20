@@ -83,7 +83,7 @@ const EnrollCandidatesDialog = ({ courseId, isOpen, onClose }: EnrollCandidatesD
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {candidates.length > 0 ? (
+                {candidates && candidates.length > 0 ? (
                   candidates.map((candidate) => (
                     <TableRow key={candidate.id}>
                       <TableCell>

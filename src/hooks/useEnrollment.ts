@@ -36,7 +36,8 @@ export const useEnrollment = () => {
 
       if (error) throw error;
 
-      const courses: Course[] = data
+      // Ensure data is an array before mapping
+      const courses: Course[] = (data || [])
         .filter(item => item.course) // Filter out any null courses
         .map(({ course }) => ({
           id: course.id,
@@ -87,7 +88,8 @@ export const useEnrollment = () => {
         throw candidatesError;
       }
 
-      if (!candidates || candidates.length === 0) {
+      // Ensure candidates is an array
+      if (!candidates || !Array.isArray(candidates) || candidates.length === 0) {
         return {
           success: false,
           message: "No valid users found for the provided emails"
