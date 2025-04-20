@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
@@ -132,6 +131,34 @@ export const useEnrollment = () => {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!authState.user?.id) return;
+
+    // Subscribe to changes in course enrollments
+    const channel = supabase
+      .channel('enrollment-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'course_enrollments',
+          filter: `user_id=eq.${authState.user.id}`
+        },
+        async () => {
+          // Refresh the enrolled courses data
+          const courses = await getEnrolledCourses();
+          // You'll need to implement a callback to update the courses in the UI
+          console.log('Course enrollments updated:', courses);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [authState.user?.id]);
 
   return {
     isLoading,

@@ -6,9 +6,14 @@ import EnrolledCourse from "./EnrolledCourse";
 import { useEnrollment } from "@/hooks/useEnrollment";
 import { Course } from "@/types/course.types";
 import { Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+
+interface EnrolledCourseWithInstructor extends Course {
+  instructorName: string;
+}
 
 const EnrolledCourses = () => {
-  const [courses, setCourses] = useState<Course[]>([]);
+  const [courses, setCourses] = useState<EnrolledCourseWithInstructor[]>([]);
   const [loading, setLoading] = useState(true);
   const { getEnrolledCourses } = useEnrollment();
 
@@ -16,7 +21,24 @@ const EnrolledCourses = () => {
     const fetchCourses = async () => {
       try {
         const enrolledCourses = await getEnrolledCourses();
-        setCourses(Array.isArray(enrolledCourses) ? enrolledCourses : []);
+        
+        // Fetch instructor names for each course
+        const coursesWithInstructors = await Promise.all(
+          enrolledCourses.map(async (course) => {
+            const { data: instructorData } = await supabase
+              .from('profiles')
+              .select('display_name')
+              .eq('id', course.instructorId)
+              .single();
+
+            return {
+              ...course,
+              instructorName: instructorData?.display_name || 'Unknown Instructor'
+            };
+          })
+        );
+
+        setCourses(coursesWithInstructors);
       } catch (error) {
         console.error("Error fetching enrolled courses:", error);
         setCourses([]);
@@ -51,7 +73,7 @@ const EnrolledCourses = () => {
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold text-gray-900">Your Courses</h2>
         <Button variant="outline" asChild>
-          <Link to="/courses">View All Courses</Link>
+          <Link to="/candidate/courses">View All Courses</Link>
         </Button>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -59,7 +81,7 @@ const EnrolledCourses = () => {
           <EnrolledCourse
             key={course.id}
             title={course.title}
-            instructor="Not Available"
+            instructor={course.instructorName}
             progress={0}
           />
         ))}
