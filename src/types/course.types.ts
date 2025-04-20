@@ -1,3 +1,4 @@
+
 import { User } from "./auth.types";
 
 export interface Course {

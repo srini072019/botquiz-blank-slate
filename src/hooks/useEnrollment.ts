@@ -65,36 +65,64 @@ export const useEnrollment = () => {
       };
     }
 
+    if (!emails || emails.length === 0) {
+      return {
+        success: false,
+        message: "No emails provided for enrollment"
+      };
+    }
+
     setIsLoading(true);
     try {
-      const { data: users, error: userError } = await supabase
+      console.log("Enrolling participants with emails:", emails);
+      
+      // First, fetch the user IDs based on the emails
+      const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('id')
-        .in('email', emails);
+        .select('id, display_name')
+        .in('id', 
+          supabase
+            .from('auth.users')
+            .select('id')
+            .in('email', emails)
+        );
 
-      if (userError) throw userError;
+      if (profilesError) {
+        console.error("Error fetching profiles:", profilesError);
+        throw profilesError;
+      }
 
-      if (!users || users.length === 0) {
+      if (!profiles || profiles.length === 0) {
         return {
           success: false,
           message: "No valid users found for the provided emails"
         };
       }
 
-      const enrollments = users.map(user => ({
+      console.log("Found profiles:", profiles);
+
+      // Create enrollment records for each user
+      const enrollments = profiles.map(profile => ({
         course_id: courseId,
-        user_id: user.id,
-        enrolled_by: authState.user!.id
+        user_id: profile.id,
+        enrolled_by: authState.user!.id,
+        enrolled_at: new Date().toISOString()
       }));
 
-      const { error } = await supabase
+      const { error: enrollmentError } = await supabase
         .from('course_enrollments')
-        .insert(enrollments);
+        .upsert(enrollments, { onConflict: 'user_id,course_id' });
 
-      if (error) throw error;
+      if (enrollmentError) {
+        console.error("Error creating enrollments:", enrollmentError);
+        throw enrollmentError;
+      }
       
-      toast.success("Participants enrolled successfully");
-      return { success: true };
+      toast.success(`Successfully enrolled ${profiles.length} participant(s)`);
+      return { 
+        success: true,
+        message: `Successfully enrolled ${profiles.length} participant(s)`
+      };
     } catch (error) {
       console.error("Error enrolling participants:", error);
       const errorMessage = error instanceof Error ? error.message : "Unknown error";

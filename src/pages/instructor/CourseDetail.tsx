@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import InstructorLayout from "@/layouts/InstructorLayout";
@@ -7,26 +8,36 @@ import { ArrowLeft, Edit, Archive, UserPlus } from "lucide-react";
 import { useCourses } from "@/hooks/useCourses";
 import { useSubjects } from "@/hooks/useSubjects";
 import { useQuestions } from "@/hooks/useQuestions";
+import { useUpdateCourse } from "@/hooks/course/useUpdateCourse";
 import SubjectList from "@/components/subject/SubjectList";
 import ExamList from "@/components/exam/ExamList";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import CourseForm from "@/components/course/CourseForm";
+import { Dialog } from "@/components/ui/dialog";
+import CourseDialogForm from "@/components/course/CourseDialogForm";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ROUTES } from "@/constants/routes";
 import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/utils";
 import EnrollCandidatesDialog from "@/components/course/EnrollCandidatesDialog";
 import ParticipantEnrollment from "@/components/course/ParticipantEnrollment";
+import { toast } from "sonner";
 
 const CourseDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { courses, getCourse, updateCourse, unpublishCourse } = useCourses();
+  const { courses, getCourse } = useCourses();
+  const { updateCourse, discontinueCourse, isLoading } = useUpdateCourse(async () => {
+    // Refresh course data after update
+    if (id) {
+      const updatedCourse = getCourse(id);
+      if (updatedCourse) {
+        setCourse(updatedCourse);
+      }
+    }
+  });
   const { subjects } = useSubjects();
   const { questions } = useQuestions();
   const [course, setCourse] = useState<any>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEnrollDialogOpen, setIsEnrollDialogOpen] = useState(false);
   const [isParticipantEnrollDialogOpen, setIsParticipantEnrollDialogOpen] = useState(false);
 
@@ -39,29 +50,25 @@ const CourseDetail = () => {
         navigate(ROUTES.INSTRUCTOR_COURSES);
       }
     }
-  }, [id, getCourse, navigate]);
+  }, [id, getCourse, navigate, courses]);
 
   const handleUpdateCourse = async (data: any) => {
-    if (course) {
-      setIsSubmitting(true);
-      const success = await updateCourse(course.id, data);
-      setIsSubmitting(false);
+    if (course && id) {
+      const success = await updateCourse(id, data);
       
       if (success) {
         setIsEditDialogOpen(false);
-        setCourse({ ...course, ...data });
+        toast.success("Course updated successfully");
       }
     }
   };
 
-  const handleUnpublishCourse = async () => {
-    if (course) {
-      setIsSubmitting(true);
-      const success = await unpublishCourse(course.id);
-      setIsSubmitting(false);
+  const handleDiscontinueCourse = async () => {
+    if (course && id) {
+      const success = await discontinueCourse(id);
       
       if (success) {
-        setCourse({ ...course, isPublished: false });
+        toast.success("Course discontinued successfully");
       }
     }
   };
@@ -97,6 +104,9 @@ const CourseDetail = () => {
               ) : (
                 <Badge variant="outline">Draft</Badge>
               )}
+              {course.isDiscontinued && (
+                <Badge variant="destructive">Discontinued</Badge>
+              )}
             </div>
             <p className="text-gray-500 mt-1">{course.description}</p>
             <div className="mt-2 text-sm text-gray-500">
@@ -111,16 +121,16 @@ const CourseDetail = () => {
               <Edit size={16} className="mr-2" />
               Edit Course
             </Button>
-            {course.isPublished && (
+            {course.isPublished && !course.isDiscontinued && (
               <>
                 <Button 
                   variant="outline"
                   className="text-amber-600 border-amber-600 hover:bg-amber-50"
-                  onClick={handleUnpublishCourse}
-                  disabled={isSubmitting}
+                  onClick={handleDiscontinueCourse}
+                  disabled={isLoading}
                 >
                   <Archive size={16} className="mr-2" />
-                  Unpublish
+                  Discontinue
                 </Button>
                 <Button 
                   variant="default"
@@ -159,34 +169,25 @@ const CourseDetail = () => {
           </CardContent>
         </Card>
 
-        {/* Add the EnrollCandidatesDialog */}
+        {/* EnrollCandidatesDialog for adding candidates to the course */}
         <EnrollCandidatesDialog
           courseId={course.id}
           isOpen={isEnrollDialogOpen}
           onClose={() => setIsEnrollDialogOpen(false)}
         />
 
+        {/* Dialog for editing course details */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Edit Course</DialogTitle>
-              <DialogDescription>
-                Update the details of this course.
-              </DialogDescription>
-            </DialogHeader>
-            <CourseForm 
-              initialData={{
-                title: course.title,
-                description: course.description,
-                imageUrl: course.imageUrl,
-                isPublished: course.isPublished,
-              }}
-              onSubmit={handleUpdateCourse}
-              isSubmitting={isSubmitting}
-            />
-          </DialogContent>
+          <CourseDialogForm
+            title="Edit Course"
+            description="Update the details of this course."
+            initialData={course}
+            onSubmit={handleUpdateCourse}
+            isSubmitting={isLoading}
+          />
         </Dialog>
 
+        {/* Dialog for enrolling participants */}
         <ParticipantEnrollment
           courseId={course.id}
           isOpen={isParticipantEnrollDialogOpen}

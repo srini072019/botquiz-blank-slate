@@ -6,6 +6,7 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@
 import { useExamCandidates } from "@/hooks/useExamCandidates";
 import { useEnrollment } from "@/hooks/useEnrollment";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 interface EnrollCandidatesDialogProps {
   courseId: string;
@@ -28,7 +29,7 @@ const EnrollCandidatesDialog = ({ courseId, isOpen, onClose }: EnrollCandidatesD
       const result = await enrollParticipants(courseId, selectedEmails);
       if (result.success) {
         setSelectedEmails([]);
-        toast.success("Candidates enrolled successfully");
+        toast.success(result.message || "Candidates enrolled successfully");
         onClose();
       } else {
         toast.error(result.message || "Failed to add candidates");
@@ -71,12 +72,13 @@ const EnrollCandidatesDialog = ({ courseId, isOpen, onClose }: EnrollCandidatesD
                       <input
                         type="checkbox"
                         checked={selectedEmails.includes(candidate.email || '')}
-                        onChange={() => toggleCandidate(candidate.email || '')}
+                        onChange={() => candidate.email && toggleCandidate(candidate.email)}
                         className="h-4 w-4"
+                        disabled={!candidate.email}
                       />
                     </TableCell>
                     <TableCell>{candidate.displayName || 'No name'}</TableCell>
-                    <TableCell>{candidate.email}</TableCell>
+                    <TableCell>{candidate.email || 'No email'}</TableCell>
                   </TableRow>
                 ))
               ) : (
@@ -98,7 +100,14 @@ const EnrollCandidatesDialog = ({ courseId, isOpen, onClose }: EnrollCandidatesD
             onClick={handleEnroll} 
             disabled={selectedEmails.length === 0 || isLoading}
           >
-            {isLoading ? 'Enrolling...' : 'Enroll Selected'}
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Enrolling...
+              </>
+            ) : (
+              'Enroll Selected'
+            )}
           </Button>
         </div>
       </DialogContent>
