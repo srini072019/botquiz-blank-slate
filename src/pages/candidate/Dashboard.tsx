@@ -12,37 +12,6 @@ const Dashboard = () => {
   const { authState } = useAuth();
   const userDisplayName = authState.user?.displayName || 'Student';
 
-  const [upcomingExams] = useState([
-    {
-      title: "Data Structures Quiz",
-      course: "Introduction to Computer Science",
-      date: "Apr 12, 2025",
-      duration: "45 minutes",
-      status: 'scheduled' as const
-    },
-    {
-      title: "Calculus Mid-term",
-      course: "Advanced Mathematics",
-      date: "Apr 18, 2025",
-      duration: "120 minutes",
-      status: 'scheduled' as const
-    },
-    {
-      title: "Programming Fundamentals",
-      course: "Introduction to Computer Science",
-      date: "Apr 8, 2025",
-      duration: "60 minutes",
-      status: 'available' as const
-    },
-    {
-      title: "Literary Analysis",
-      course: "English Literature",
-      date: "Apr 5, 2025",
-      duration: "90 minutes",
-      status: 'completed' as const
-    },
-  ]);
-
   return (
     <CandidateLayout>
       <div className="space-y-8">
@@ -61,7 +30,7 @@ const Dashboard = () => {
 
         <DashboardMetrics />
         <EnrolledCourses />
-        <ExamsList exams={upcomingExams} />
+        <ExamsList />
       </div>
     </CandidateLayout>
   );
