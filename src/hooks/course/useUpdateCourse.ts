@@ -10,7 +10,6 @@ export const useUpdateCourse = (onSuccess: () => Promise<void>) => {
   const updateCourse = async (id: string, data: CourseFormData): Promise<boolean> => {
     setIsLoading(true);
     try {
-      // Update in Supabase
       const { error } = await supabase
         .from('courses')
         .update({
@@ -22,11 +21,8 @@ export const useUpdateCourse = (onSuccess: () => Promise<void>) => {
         })
         .eq('id', id);
       
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
       
-      // Refresh courses from the database
       await onSuccess();
       toast.success("Course updated successfully");
       return true;
@@ -39,8 +35,35 @@ export const useUpdateCourse = (onSuccess: () => Promise<void>) => {
     }
   };
 
+  const discontinueCourse = async (id: string): Promise<boolean> => {
+    setIsLoading(true);
+    try {
+      const { error } = await supabase
+        .from('courses')
+        .update({
+          is_discontinued: true,
+          discontinued_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      await onSuccess();
+      toast.success("Course discontinued successfully");
+      return true;
+    } catch (error) {
+      console.error("Error discontinuing course:", error);
+      toast.error("Failed to discontinue course");
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return {
     updateCourse,
+    discontinueCourse,
     isLoading
   };
 };

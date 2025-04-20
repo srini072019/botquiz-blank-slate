@@ -9,13 +9,61 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      course_enrollments: {
+        Row: {
+          course_id: string | null
+          enrolled_at: string | null
+          enrolled_by: string | null
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          course_id?: string | null
+          enrolled_at?: string | null
+          enrolled_by?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          course_id?: string | null
+          enrolled_at?: string | null
+          enrolled_by?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_enrollments_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_enrollments_enrolled_by_fkey"
+            columns: ["enrolled_by"]
+            isOneToOne: false
+            referencedRelation: "eligible_candidates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_enrollments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "eligible_candidates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       courses: {
         Row: {
           created_at: string
           description: string | null
+          discontinued_at: string | null
           id: string
           image_url: string | null
           instructor_id: string
+          is_discontinued: boolean | null
           is_published: boolean
           title: string
           updated_at: string
@@ -23,9 +71,11 @@ export type Database = {
         Insert: {
           created_at?: string
           description?: string | null
+          discontinued_at?: string | null
           id?: string
           image_url?: string | null
           instructor_id: string
+          is_discontinued?: boolean | null
           is_published?: boolean
           title: string
           updated_at?: string
@@ -33,9 +83,11 @@ export type Database = {
         Update: {
           created_at?: string
           description?: string | null
+          discontinued_at?: string | null
           id?: string
           image_url?: string | null
           instructor_id?: string
+          is_discontinued?: boolean | null
           is_published?: boolean
           title?: string
           updated_at?: string

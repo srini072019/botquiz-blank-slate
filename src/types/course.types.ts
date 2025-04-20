@@ -1,4 +1,3 @@
-
 import { User } from "./auth.types";
 
 export interface Course {
@@ -12,6 +11,8 @@ export interface Course {
   updatedAt: Date;
   enrollmentCount?: number;
   isPublished: boolean;
+  isDiscontinued?: boolean;
+  discontinuedAt?: Date;
 }
 
 export interface CourseFormData {

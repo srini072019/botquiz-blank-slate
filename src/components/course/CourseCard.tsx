@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Course } from "@/types/course.types";
 import { CalendarIcon, Users } from "lucide-react";
 import { formatDate } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 
 interface CourseCardProps {
   course: Course;
@@ -29,11 +30,18 @@ const CourseCard = ({ course, actionButton }: CourseCardProps) => {
           </div>
         )}
         
-        {!course.isPublished && (
-          <div className="absolute top-2 right-2 bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">
-            Draft
-          </div>
-        )}
+        <div className="absolute top-2 right-2 flex gap-2">
+          {!course.isPublished && (
+            <Badge variant="outline" className="bg-yellow-100 text-yellow-800">
+              Draft
+            </Badge>
+          )}
+          {course.isDiscontinued && (
+            <Badge variant="outline" className="bg-red-100 text-red-800">
+              Discontinued
+            </Badge>
+          )}
+        </div>
       </div>
       
       <CardHeader className="p-4 pb-2">

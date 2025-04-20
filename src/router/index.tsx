@@ -19,6 +19,7 @@ import Questions from "@/pages/instructor/Questions";
 import Exams from "@/pages/instructor/Exams";
 import CreateExam from "@/pages/instructor/CreateExam";
 import EditExam from "@/pages/instructor/EditExam";
+import ExamPreview from "@/pages/instructor/ExamPreview"; // Add import for ExamPreview
 
 // Candidate pages
 import CandidateDashboard from "@/pages/candidate/Dashboard";
@@ -99,7 +100,7 @@ const routes: RouteObject[] = [
   },
   {
     path: "/instructor/exams/:examId/preview",
-    element: <ExamPage isPreview={true} />,
+    element: <ExamPreview />,
   },
   
   // Candidate

@@ -12,32 +12,6 @@ const Dashboard = () => {
   const { authState } = useAuth();
   const userDisplayName = authState.user?.displayName || 'Student';
 
-  const [enrolledCourses] = useState([
-    {
-      title: "Introduction to Computer Science",
-      instructor: "Dr. Jane Smith",
-      progress: 65,
-      nextExam: {
-        title: "Data Structures Quiz",
-        date: "Apr 12, 2025 • 10:00 AM"
-      }
-    },
-    {
-      title: "Advanced Mathematics",
-      instructor: "Prof. Robert Johnson",
-      progress: 42,
-      nextExam: {
-        title: "Calculus Mid-term",
-        date: "Apr 18, 2025 • 2:00 PM"
-      }
-    },
-    {
-      title: "English Literature",
-      instructor: "Dr. Emily Williams",
-      progress: 88,
-    },
-  ]);
-
   const [upcomingExams] = useState([
     {
       title: "Data Structures Quiz",
@@ -86,7 +60,7 @@ const Dashboard = () => {
         </div>
 
         <DashboardMetrics />
-        <EnrolledCourses courses={enrolledCourses} />
+        <EnrolledCourses />
         <ExamsList exams={upcomingExams} />
       </div>
     </CandidateLayout>

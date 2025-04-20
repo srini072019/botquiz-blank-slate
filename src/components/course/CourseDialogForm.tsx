@@ -2,6 +2,7 @@
 import { DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import CourseForm from "@/components/course/CourseForm";
 import { Course, CourseFormData } from "@/types/course.types";
+import { ReactNode } from "react";
 
 interface CourseDialogFormProps {
   title: string;
@@ -9,6 +10,7 @@ interface CourseDialogFormProps {
   initialData?: Course;
   onSubmit: (data: CourseFormData) => Promise<void>;
   isSubmitting: boolean;
+  additionalActions?: ReactNode;
 }
 
 const CourseDialogForm = ({
@@ -16,7 +18,8 @@ const CourseDialogForm = ({
   description,
   initialData,
   onSubmit,
-  isSubmitting
+  isSubmitting,
+  additionalActions
 }: CourseDialogFormProps) => {
   return (
     <DialogContent>
@@ -31,6 +34,7 @@ const CourseDialogForm = ({
         onSubmit={onSubmit}
         isSubmitting={isSubmitting}
       />
+      {additionalActions}
     </DialogContent>
   );
 };

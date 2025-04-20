@@ -1,30 +1,63 @@
 
 import { useState, useEffect } from "react";
-import { Exam, ExamFormData, ExamStatus } from "@/types/exam.types";
+import { Exam, ExamStatus, ExamFormData } from "@/types/exam.types";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { Question } from "@/types/question.types";
 import { 
   fetchExamsFromApi, 
   createExamInApi, 
   updateExamInApi, 
-  deleteExamInApi,
+  deleteExamInApi, 
   updateExamStatusInApi 
 } from "./api";
-import { ExamHookResult } from "./types";
-import { Question } from "@/types/question.types";
 
-export const useExams = (courseId?: string, instructorId?: string): ExamHookResult => {
+interface UseExamsResult {
+  exams: Exam[];
+  isLoading: boolean;
+  error: string | null;
+  fetchExams: (courseId?: string) => Promise<void>;
+  createExam: (data: ExamFormData) => Promise<boolean>;
+  updateExam: (id: string, data: ExamFormData) => Promise<boolean>;
+  deleteExam: (id: string) => Promise<boolean>;
+  publishExam: (id: string) => Promise<boolean>;
+  archiveExam: (id: string) => Promise<boolean>;
+  getExam: (id: string) => Exam | undefined;
+  getExamsByCourse: (courseId: string) => Exam[];
+  getExamWithQuestions: (id: string, questions: Question[]) => { exam: Exam | null; examQuestions: Question[] };
+}
+
+export const useExams = (courseId?: string): UseExamsResult => {
   const [exams, setExams] = useState<Exam[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const fetchExams = async () => {
+  // Fetch exams from the API
+  const fetchExams = async (courseIdParam?: string) => {
+    const effectiveCourseId = courseIdParam || courseId;
+    
     setIsLoading(true);
+    setError(null);
+
     try {
-      const fetchedExams = await fetchExamsFromApi(courseId, instructorId);
+      const userId = await supabase.auth.getUser().then(res => res.data.user?.id);
+      if (!userId) {
+        setError("User not authenticated");
+        return;
+      }
+
+      const fetchedExams = await fetchExamsFromApi(effectiveCourseId, userId);
       setExams(fetchedExams);
+    } catch (err) {
+      console.error("Error fetching exams:", err);
+      setError("Failed to fetch exams");
+      toast.error("Failed to fetch exams");
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Create a new exam
   const createExam = async (data: ExamFormData): Promise<boolean> => {
     setIsLoading(true);
     try {
@@ -34,11 +67,16 @@ export const useExams = (courseId?: string, instructorId?: string): ExamHookResu
         return true;
       }
       return false;
+    } catch (error) {
+      console.error("Error creating exam:", error);
+      toast.error("Failed to create exam");
+      return false;
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Update an existing exam
   const updateExam = async (id: string, data: ExamFormData): Promise<boolean> => {
     setIsLoading(true);
     try {
@@ -47,82 +85,115 @@ export const useExams = (courseId?: string, instructorId?: string): ExamHookResu
         await fetchExams();
       }
       return success;
+    } catch (error) {
+      console.error("Error updating exam:", error);
+      toast.error("Failed to update exam");
+      return false;
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Delete an exam
   const deleteExam = async (id: string): Promise<boolean> => {
     setIsLoading(true);
     try {
       const success = await deleteExamInApi(id);
       if (success) {
-        await fetchExams();
+        setExams(exams.filter(exam => exam.id !== id));
       }
       return success;
+    } catch (error) {
+      console.error("Error deleting exam:", error);
+      toast.error("Failed to delete exam");
+      return false;
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Publish an exam (change status to PUBLISHED)
   const publishExam = async (id: string): Promise<boolean> => {
     setIsLoading(true);
     try {
       const success = await updateExamStatusInApi(id, ExamStatus.PUBLISHED);
       if (success) {
-        await fetchExams();
+        setExams(exams.map(exam => 
+          exam.id === id ? { ...exam, status: ExamStatus.PUBLISHED } : exam
+        ));
       }
       return success;
+    } catch (error) {
+      console.error("Error publishing exam:", error);
+      toast.error("Failed to publish exam");
+      return false;
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Archive an exam (change status to ARCHIVED)
   const archiveExam = async (id: string): Promise<boolean> => {
     setIsLoading(true);
     try {
       const success = await updateExamStatusInApi(id, ExamStatus.ARCHIVED);
       if (success) {
-        await fetchExams();
+        setExams(exams.map(exam => 
+          exam.id === id ? { ...exam, status: ExamStatus.ARCHIVED } : exam
+        ));
       }
       return success;
+    } catch (error) {
+      console.error("Error archiving exam:", error);
+      toast.error("Failed to archive exam");
+      return false;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const getExamWithQuestions = (id: string, allQuestions: Question[]) => {
-    const exam = exams.find(exam => exam.id === id);
-    let examQuestions: Question[] = [];
+  // Get exam by ID
+  const getExam = (id: string): Exam | undefined => {
+    return exams.find(exam => exam.id === id);
+  };
+
+  // Get exams by course ID
+  const getExamsByCourse = (courseId: string): Exam[] => {
+    return exams.filter(exam => exam.courseId === courseId);
+  };
+
+  // Get exam with associated questions
+  const getExamWithQuestions = (id: string, questionsList: Question[]): { exam: Exam | null; examQuestions: Question[] } => {
+    const exam = exams.find(e => e.id === id) || null;
     
-    if (exam) {
-      examQuestions = allQuestions.filter(q => exam.questions.includes(q.id));
-      
-      // If shuffle is enabled, we're just showing a preview (not the actual shuffle)
-      if (exam.shuffleQuestions) {
-        // Just for display, not actual exam taking
-        examQuestions = [...examQuestions].sort(() => 0.5 - Math.random());
-      }
+    if (!exam) {
+      return { exam: null, examQuestions: [] };
     }
+    
+    // Filter questions that are associated with this exam
+    const examQuestions = questionsList.filter(q => 
+      exam.questions.includes(q.id)
+    );
     
     return { exam, examQuestions };
   };
 
   useEffect(() => {
     fetchExams();
-  }, [courseId, instructorId]);
+  }, [courseId]);
 
-  return {
-    exams,
-    isLoading,
-    createExam,
-    updateExam,
-    deleteExam,
-    publishExam,
+  return { 
+    exams, 
+    isLoading, 
+    error, 
+    fetchExams, 
+    createExam, 
+    updateExam, 
+    deleteExam, 
+    publishExam, 
     archiveExam,
-    fetchExams,
-    getExam: (id: string) => exams.find(exam => exam.id === id),
-    getExamsByCourse: (courseId: string) => exams.filter(exam => exam.courseId === courseId),
-    getExamWithQuestions,
+    getExam,
+    getExamsByCourse,
+    getExamWithQuestions
   };
 };

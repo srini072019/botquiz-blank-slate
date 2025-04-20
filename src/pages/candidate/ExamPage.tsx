@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuestions } from "@/hooks/useQuestions";
-import { useExams } from "@/hooks/useExams";
+import { useExams, useExam } from "@/hooks/useExams";
 import { useExamSession } from "@/hooks/useExamSession";
 import { useAuth } from "@/context/AuthContext";
 import ExamTaking from "@/components/exam/ExamTaking";
@@ -18,9 +18,12 @@ import { format } from "date-fns";
 
 interface ExamPageProps {
   isPreview?: boolean;
+  previewExamId?: string;
+  previewExam?: Exam;
+  previewExamQuestions?: Question[];
 }
 
-const ExamPage = ({ isPreview = false }: ExamPageProps) => {
+const ExamPage = ({ isPreview = false, previewExamId, previewExam, previewExamQuestions }: ExamPageProps) => {
   const { examId } = useParams<{ examId: string }>();
   const navigate = useNavigate();
   const { authState } = useAuth();
@@ -34,39 +37,23 @@ const ExamPage = ({ isPreview = false }: ExamPageProps) => {
     getExamSession 
   } = useExamSession();
 
-  const [isLoading, setIsLoading] = useState(true);
-  const [exam, setExam] = useState<Exam | null>(null);
-  const [examQuestions, setExamQuestions] = useState<Question[]>([]);
+  // Use preview data if in preview mode, otherwise fetch from API
+  const actualExamId = isPreview ? previewExamId : examId;
+  
+  const { exam: fetchedExam, examQuestions: fetchedExamQuestions, isLoading, error } = useExam(
+    isPreview ? undefined : examId,
+    getExamWithQuestions,
+    questions
+  );
+
+  // Use preview data or fetched data
+  const exam = isPreview ? previewExam : fetchedExam;
+  const examQuestions = isPreview ? previewExamQuestions || [] : fetchedExamQuestions;
+
   const [examSession, setExamSession] = useState<ExamSession | null>(null);
   const [examResult, setExamResult] = useState<ExamResult | null>(null);
 
-  useEffect(() => {
-    const loadExam = async () => {
-      if (!examId) return;
-      
-      try {
-        const { exam: examData, examQuestions: examQuestionsList } = getExamWithQuestions(examId, questions);
-        
-        if (!examData) {
-          toast.error("Exam not found");
-          navigate(-1);
-          return;
-        }
-
-        setExam(examData);
-        setExamQuestions(examQuestionsList);
-      } catch (error) {
-        console.error("Error loading exam:", error);
-        toast.error("Failed to load exam");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadExam();
-  }, [examId, getExamWithQuestions, questions, navigate]);
-
-  // Check authentication if not in preview mode
+  // Only check auth if not in preview mode
   useEffect(() => {
     if (!isPreview && !authState.isLoading && !authState.isAuthenticated) {
       toast.error("You must be logged in to access this page");
@@ -77,9 +64,7 @@ const ExamPage = ({ isPreview = false }: ExamPageProps) => {
   const handleStartExam = async () => {
     if (!exam) return;
 
-    // For preview mode, we don't need to check auth
     if (isPreview) {
-      // For preview mode, create a mock session without saving to database
       const mockSession: ExamSession = {
         id: 'preview',
         examId: exam.id,
@@ -94,7 +79,6 @@ const ExamPage = ({ isPreview = false }: ExamPageProps) => {
       return;
     }
 
-    // For regular mode, check auth
     if (!authState.user) {
       toast.error("You must be logged in to take an exam");
       navigate("/login", { state: { from: `/candidate/exams/${examId}` } });
@@ -121,7 +105,6 @@ const ExamPage = ({ isPreview = false }: ExamPageProps) => {
     if (!examSession) return false;
     
     if (isPreview) {
-      // For preview mode, just update the local state
       setExamSession(prev => {
         if (!prev) return prev;
         const answers = [...prev.answers];
@@ -145,14 +128,12 @@ const ExamPage = ({ isPreview = false }: ExamPageProps) => {
     if (!examSession) return false;
     
     if (isPreview) {
-      // For preview mode, just update the local state
       setExamSession(prev => prev ? { ...prev, currentQuestionIndex: newIndex } : null);
       return true;
     }
     
     const success = await navigateQuestion(examSession.id, newIndex);
     if (success) {
-      // Update the session in state
       const updatedSession = getExamSession(examSession.id);
       if (updatedSession) {
         setExamSession(updatedSession);
@@ -165,7 +146,6 @@ const ExamPage = ({ isPreview = false }: ExamPageProps) => {
     if (!examSession || !exam) return;
     
     if (isPreview) {
-      // For preview mode, just show a message and return to the exam list
       toast.success("Preview completed");
       navigate("/instructor/exams");
       return;
@@ -183,7 +163,8 @@ const ExamPage = ({ isPreview = false }: ExamPageProps) => {
     }
   };
 
-  if (isLoading) {
+  // In preview mode, skip loading state and just render a placeholder if no data yet
+  if (!isPreview && isLoading) {
     return (
       <CandidateLayout>
         <div className="flex items-center justify-center h-64">
@@ -193,6 +174,26 @@ const ExamPage = ({ isPreview = false }: ExamPageProps) => {
     );
   }
 
+  // Only show error in non-preview mode
+  if (!isPreview && (error || !exam)) {
+    return (
+      <CandidateLayout>
+        <div className="container mx-auto py-6">
+          <h1 className="text-2xl font-bold mb-6">Exam Not Found</h1>
+          <div className="bg-white p-6 rounded-lg shadow-sm border">
+            <p className="text-center text-red-500">Error: {error || "Exam not found"}</p>
+            <div className="mt-6 flex justify-center">
+              <Button onClick={() => navigate("/candidate/exams")}>
+                Back to Exams
+              </Button>
+            </div>
+          </div>
+        </div>
+      </CandidateLayout>
+    );
+  }
+
+  // If we have results, show them
   if (examResult) {
     return (
       <CandidateLayout>
@@ -209,6 +210,26 @@ const ExamPage = ({ isPreview = false }: ExamPageProps) => {
     );
   }
 
+  // Exit early if we don't have an exam in preview mode
+  if (isPreview && !exam) {
+    console.error("No exam data available for preview");
+    return (
+      <CandidateLayout>
+        <div className="container mx-auto py-6">
+          <div className="bg-white p-6 rounded-lg shadow-sm border">
+            <p className="text-center text-red-500">Error: No exam data available for preview</p>
+            <div className="mt-6 flex justify-center">
+              <Button onClick={() => navigate("/instructor/exams")}>
+                Back to Exams
+              </Button>
+            </div>
+          </div>
+        </div>
+      </CandidateLayout>
+    );
+  }
+
+  // If no exam session yet, show the exam info screen
   if (!examSession) {
     return (
       <CandidateLayout>
@@ -267,6 +288,7 @@ const ExamPage = ({ isPreview = false }: ExamPageProps) => {
     );
   }
 
+  // Finally render the exam taking component
   return (
     <CandidateLayout>
       <ExamTaking
