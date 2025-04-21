@@ -57,6 +57,7 @@ const CourseDetails = () => {
           .eq('course_id', courseId);
         
         if (subjectsError) throw subjectsError;
+        console.log("Fetched subjects for course:", subjectsData);
         setSubjects(subjectsData || []);
       } catch (error) {
         console.error('Error fetching course details:', error);

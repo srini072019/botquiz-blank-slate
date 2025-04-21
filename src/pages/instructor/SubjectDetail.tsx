@@ -14,13 +14,18 @@ import { ROUTES } from "@/constants/routes";
 const SubjectDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { subjects, getSubject } = useSubjects();
+  const { subjects, getSubject, fetchSubjects } = useSubjects();
   const { courses } = useCourses();
   const [subject, setSubject] = useState<any>(null);
   const [course, setCourse] = useState<any>(null);
   
   useEffect(() => {
-    if (id) {
+    // Make sure we fetch all subjects, including those without questions
+    fetchSubjects();
+  }, [fetchSubjects]);
+  
+  useEffect(() => {
+    if (id && subjects.length > 0) {
       const foundSubject = getSubject(id);
       if (foundSubject) {
         setSubject(foundSubject);
@@ -34,7 +39,7 @@ const SubjectDetail = () => {
         navigate(ROUTES.INSTRUCTOR_SUBJECTS);
       }
     }
-  }, [id, getSubject, courses, navigate]);
+  }, [id, getSubject, subjects, courses, navigate]);
 
   if (!subject || !course) {
     return (

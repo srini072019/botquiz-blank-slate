@@ -1,10 +1,8 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { read, utils, writeFileXLSX } from "xlsx";
-import { QuestionFormData, QuestionType, DifficultyLevel } from "@/types/question.types";
+import { QuestionFormData } from "@/types/question.types";
 import { Subject } from "@/types/subject.types";
-import { mapToQuestionType, mapToDifficultyLevel } from "@/utils/questionUtils";
 import { parseFileData } from "./parseFileData";
 import { downloadTemplate } from "./downloadTemplate";
 
@@ -21,10 +19,24 @@ export const useImportQuestions = (subjects: Subject[]) => {
   };
 
   const findSubjectId = (subjectName: string): string | null => {
-    const subject = subjects.find(s => 
-      s.title.toLowerCase().trim() === subjectName.toLowerCase().trim()
+    // Improved subject matching logic - more lenient matching
+    // Convert subject names to lowercase and trim whitespace for comparison
+    const normalizedSubjectName = subjectName.toLowerCase().trim();
+    
+    // First try exact match
+    const exactMatch = subjects.find(s => 
+      s.title.toLowerCase().trim() === normalizedSubjectName
     );
-    return subject ? subject.id : null;
+    
+    if (exactMatch) return exactMatch.id;
+    
+    // If no exact match, try case-insensitive contains match
+    const partialMatch = subjects.find(s => 
+      s.title.toLowerCase().includes(normalizedSubjectName) || 
+      normalizedSubjectName.includes(s.title.toLowerCase())
+    );
+    
+    return partialMatch ? partialMatch.id : null;
   };
 
   const handleFileUpload = async (file: File | null) => {
@@ -34,6 +46,7 @@ export const useImportQuestions = (subjects: Subject[]) => {
     setIsLoading(true);
     
     try {
+      console.log("Available subjects for matching:", subjects.map(s => s.title));
       const questions = await parseFileData(file, findSubjectId, subjects);
       
       if (questions.length === 0) {
