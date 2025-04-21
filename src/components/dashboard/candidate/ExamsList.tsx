@@ -110,6 +110,7 @@ const ExamsList = () => {
               date={new Date(exam.end_date).toLocaleDateString()}
               duration={`${exam.time_limit} minutes`}
               status={exam.status}
+              examId={exam.id}
             />
           ))}
         </div>

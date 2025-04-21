@@ -9,9 +9,10 @@ interface UpcomingExamProps {
   date: string;
   duration: string;
   status: 'scheduled' | 'available' | 'completed';
+  examId: string;
 }
 
-const UpcomingExam = ({ title, course, date, duration, status }: UpcomingExamProps) => {
+const UpcomingExam = ({ title, course, date, duration, status, examId }: UpcomingExamProps) => {
   const getStatusBadge = () => {
     switch (status) {
       case 'available':
@@ -50,15 +51,15 @@ const UpcomingExam = ({ title, course, date, duration, status }: UpcomingExamPro
             className="w-full bg-assessify-primary hover:bg-assessify-primary/90"
             asChild
           >
-            <Link to="/candidate/exams">Take Exam</Link>
+            <Link to={`/candidate/exams/${examId}`}>Take Exam</Link>
           </Button>
         ) : status === 'scheduled' ? (
           <Button variant="outline" className="w-full" asChild>
-            <Link to="/candidate/exams">View Details</Link>
+            <Link to={`/candidate/exams/${examId}`}>View Details</Link>
           </Button>
         ) : (
           <Button variant="outline" className="w-full" asChild>
-            <Link to="/candidate/exams">View Results</Link>
+            <Link to={`/candidate/exams/${examId}`}>View Results</Link>
           </Button>
         )}
       </div>

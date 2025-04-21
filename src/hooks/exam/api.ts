@@ -48,6 +48,8 @@ export const fetchExamsFromApi = async (courseId?: string, instructorId?: string
 
 export const createExamInApi = async (data: ExamFormData): Promise<string | null> => {
   try {
+    console.log("Creating exam with data:", data);
+    
     // Insert exam record
     const { data: examData, error: examError } = await supabase
       .from('exams')
@@ -70,8 +72,11 @@ export const createExamInApi = async (data: ExamFormData): Promise<string | null
 
     if (examError) throw examError;
     
-    // Insert question associations
-    if (data.questions.length > 0) {
+    console.log("Exam created:", examData);
+    
+    // Insert question associations if not using question pool
+    if (!data.useQuestionPool && data.questions.length > 0) {
+      console.log("Adding questions to exam:", data.questions);
       const examQuestions = data.questions.map((questionId, index) => ({
         exam_id: examData.id,
         question_id: questionId,
@@ -82,8 +87,14 @@ export const createExamInApi = async (data: ExamFormData): Promise<string | null
         .from('exam_questions')
         .insert(examQuestions);
         
-      if (questionsError) throw questionsError;
+      if (questionsError) {
+        console.error("Error adding questions to exam:", questionsError);
+        throw questionsError;
+      }
     }
+    
+    // Assign exam to all enrolled candidates in the course
+    await assignExamToCandidates(examData.id, data.courseId);
     
     toast.success("Exam created successfully");
     return examData.id;
@@ -91,6 +102,52 @@ export const createExamInApi = async (data: ExamFormData): Promise<string | null
     console.error("Error creating exam:", error);
     toast.error("Failed to create exam");
     return null;
+  }
+};
+
+// Helper function to assign exam to all candidates enrolled in the course
+const assignExamToCandidates = async (examId: string, courseId: string) => {
+  try {
+    console.log("Assigning exam to candidates. Exam ID:", examId, "Course ID:", courseId);
+    
+    // Get all candidates enrolled in the course
+    const { data: enrollments, error: enrollmentsError } = await supabase
+      .from('course_enrollments')
+      .select('user_id')
+      .eq('course_id', courseId);
+    
+    if (enrollmentsError) {
+      console.error("Error fetching course enrollments:", enrollmentsError);
+      throw enrollmentsError;
+    }
+    
+    console.log("Found enrollments:", enrollments);
+    
+    if (enrollments.length === 0) {
+      console.log("No candidates enrolled in this course");
+      return;
+    }
+    
+    // Create assignments for each candidate
+    const assignments = enrollments.map(enrollment => ({
+      exam_id: examId,
+      candidate_id: enrollment.user_id,
+      status: 'available',
+    }));
+    
+    const { error: assignmentError } = await supabase
+      .from('exam_candidate_assignments')
+      .insert(assignments);
+    
+    if (assignmentError) {
+      console.error("Error assigning exam to candidates:", assignmentError);
+      throw assignmentError;
+    }
+    
+    console.log("Exam assigned to", assignments.length, "candidates");
+  } catch (error) {
+    console.error("Error in assignExamToCandidates:", error);
+    toast.error("Failed to assign exam to candidates");
   }
 };
 
@@ -125,8 +182,8 @@ export const updateExamInApi = async (id: string, data: ExamFormData): Promise<b
       
     if (deleteError) throw deleteError;
     
-    // Insert new question associations
-    if (data.questions.length > 0) {
+    // Insert new question associations if not using question pool
+    if (!data.useQuestionPool && data.questions.length > 0) {
       const examQuestions = data.questions.map((questionId, index) => ({
         exam_id: id,
         question_id: questionId,
@@ -179,6 +236,19 @@ export const updateExamStatusInApi = async (id: string, status: ExamStatus): Pro
       .eq('id', id);
 
     if (error) throw error;
+    
+    // If publishing the exam, make sure to assign to candidates
+    if (status === ExamStatus.PUBLISHED) {
+      const { data: exam } = await supabase
+        .from('exams')
+        .select('course_id')
+        .eq('id', id)
+        .single();
+        
+      if (exam) {
+        await assignExamToCandidates(id, exam.course_id);
+      }
+    }
     
     toast.success(`Exam ${status.toLowerCase()} successfully`);
     return true;
