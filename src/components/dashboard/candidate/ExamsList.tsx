@@ -6,6 +6,7 @@ import UpcomingExam from "./UpcomingExam";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 interface Exam {
   id: string;
@@ -28,9 +29,14 @@ const ExamsList = () => {
       if (!authState.user?.id) return;
 
       try {
+        console.log("Fetching exams for candidate ID:", authState.user.id);
+        
         const { data, error } = await supabase
           .from('exam_candidate_assignments')
           .select(`
+            id,
+            status,
+            exam_id,
             exam:exams (
               id,
               title,
@@ -39,17 +45,20 @@ const ExamsList = () => {
               course:courses (
                 title
               )
-            ),
-            status
+            )
           `)
-          .eq('candidate_id', authState.user.id)
-          .order('created_at', { ascending: false })
-          .limit(4);
+          .eq('candidate_id', authState.user.id);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error fetching exams:', error);
+          throw error;
+        }
 
+        console.log("Raw exam data:", data);
+
+        // Filter out any null exam values and format the data
         const formattedExams = data
-          .filter(item => item.exam) // Filter out any null exam values
+          .filter(item => item.exam) 
           .map(item => ({
             id: item.exam.id,
             title: item.exam.title,
@@ -62,9 +71,10 @@ const ExamsList = () => {
           }));
 
         setExams(formattedExams);
-        console.log("Fetched exams:", formattedExams);
+        console.log("Formatted exams:", formattedExams);
       } catch (error) {
         console.error('Error fetching exams:', error);
+        toast.error('Failed to load exams');
       } finally {
         setLoading(false);
       }
@@ -104,9 +114,9 @@ const ExamsList = () => {
           ))}
         </div>
       ) : (
-        <div className="text-center py-12 bg-white rounded-lg shadow">
-          <h3 className="text-lg font-semibold text-gray-900">No Exams Available</h3>
-          <p className="text-gray-600 mt-2">You don't have any exams at the moment.</p>
+        <div className="text-center py-12 bg-white rounded-lg shadow dark:bg-gray-800">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">No Exams Available</h3>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">You don't have any exams at the moment.</p>
         </div>
       )}
     </div>

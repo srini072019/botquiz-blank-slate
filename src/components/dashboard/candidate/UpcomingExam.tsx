@@ -50,15 +50,15 @@ const UpcomingExam = ({ title, course, date, duration, status }: UpcomingExamPro
             className="w-full bg-assessify-primary hover:bg-assessify-primary/90"
             asChild
           >
-            <Link to={`/candidate/exams`}>Take Exam</Link>
+            <Link to="/candidate/exams">Take Exam</Link>
           </Button>
         ) : status === 'scheduled' ? (
-          <Button variant="outline" className="w-full">
-            View Details
+          <Button variant="outline" className="w-full" asChild>
+            <Link to="/candidate/exams">View Details</Link>
           </Button>
         ) : (
-          <Button variant="outline" className="w-full">
-            View Results
+          <Button variant="outline" className="w-full" asChild>
+            <Link to="/candidate/exams">View Results</Link>
           </Button>
         )}
       </div>

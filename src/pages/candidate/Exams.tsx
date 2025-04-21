@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Clock, FileText, Calendar, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner";
 
 interface Exam {
   id: string;
@@ -37,9 +38,12 @@ const Exams = () => {
 
       try {
         setLoading(true);
+        console.log("Fetching exams for candidate ID:", authState.user.id);
+        
         const { data, error } = await supabase
           .from('exam_candidate_assignments')
           .select(`
+            status,
             exam:exams (
               id,
               title,
@@ -48,12 +52,17 @@ const Exams = () => {
               start_date,
               end_date,
               exam_questions(count)
-            ),
-            status
+            )
           `)
           .eq('candidate_id', authState.user.id);
 
-        if (error) throw error;
+        if (error) {
+          console.error("Error fetching exams:", error);
+          toast.error("Failed to load exams");
+          throw error;
+        }
+
+        console.log("Raw exam data:", data);
 
         // Process the data
         const processedExams = data
@@ -63,7 +72,7 @@ const Exams = () => {
             title: item.exam.title,
             description: item.exam.description || "",
             time_limit: item.exam.time_limit,
-            questions_count: item.exam.exam_questions.length,
+            questions_count: item.exam.exam_questions?.length || 0,
             start_date: item.exam.start_date,
             end_date: item.exam.end_date,
             status: item.status as 'available' | 'scheduled' | 'completed'
@@ -73,6 +82,7 @@ const Exams = () => {
         console.log("Processed exams:", processedExams);
       } catch (error) {
         console.error("Error fetching exams:", error);
+        toast.error("Failed to load exams");
       } finally {
         setLoading(false);
       }
@@ -138,7 +148,7 @@ const Exams = () => {
     <CandidateLayout>
       <div className="container mx-auto py-6">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Available Exams</h1>
+          <h1 className="text-2xl font-bold">Your Exams</h1>
           <div className="flex space-x-2">
             <Button 
               variant={filter === "all" ? "default" : "outline"}
