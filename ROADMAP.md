@@ -1,110 +1,59 @@
 
-# Assessify Project Roadmap
+# LaunchX LMS Roadmap
 
-This document outlines the development plan for the Assessify online MCQ exam platform.
+This document outlines the development roadmap for the LaunchX Learning Management System.
 
-## Version 1.0 - Foundation
+## Completed Features
 
-### Phase 1: Project Setup & Core UI (Completed)
-- [x] Project initialization with Vite, React, TypeScript
-- [x] Tailwind CSS and ShadCN UI integration
-- [x] Project structure organization
-- [x] Common components (Logo, Navigation, Layout templates)
-- [x] Landing page UI
-- [x] Authentication pages (Login, Register, Forgot Password)
-- [x] Dashboard UI for all user roles
+- User authentication and authorization
+- Course management
+- Subject management
+- Questions and exam creation
+- Course enrollments
+- Exam assignments for course candidates
 
-### Phase 2: Authentication & User Management (Completed)
-- [x] Authentication context for managing user state
-- [x] User registration and login functionality
-- [x] Role-based access control
-- [x] Protected routes for different user roles
-- [x] Demo authentication flow for testing
-- [x] Supabase integration for authentication
+## Current Sprint
 
-### Phase 3: Course & Subject Management (Completed)
-- [x] Course CRUD operations
-- [x] Subject CRUD operations
-- [x] Course enrollment system
-- [x] Course listing and filtering
-- [x] Subject assignment to courses
-- [x] Admin oversight of all courses
+- Exam taking functionality for candidates
+- Automatic exam grading
+- Results display for completed exams
+- Exam scheduling with date/time restrictions
 
-### Phase 4: Question Bank (Completed)
-- [x] Question types (MCQ, True/False, Multiple Answer)
-- [x] Question categorization by subject
-- [x] Question difficulty levels
-- [x] Question search and filtering
-- [x] Question CRUD operations
-- [x] Database schema for questions and options
+## Upcoming Features
 
-### Phase 5: Exam Creation & Management (In Progress)
-- [x] Exam creation interface
-- [x] Exam settings (time limits, shuffling, etc.)
-- [x] Question selection from question bank
-- [x] Exam scheduling
-- [x] Exam publishing/unpublishing
-- [ ] Integration with real exam data
+### Short-term (1-2 Months)
 
-### Phase 6: Exam Taking & Results (Planned)
-- [ ] Exam taking interface for candidates
-- [ ] Timer functionality
-- [ ] Auto-submission when time expires
-- [ ] Answer saving and navigation
-- [ ] Result calculation and display
-- [ ] Result history for candidates
+- Enhanced analytics for instructors to track candidate progress
+- Bulk import/export for questions and exams
+- Improved notification system for upcoming exams
+- Mobile-responsive design improvements
 
-## Version 2.0 - Core Functionality
+### Medium-term (3-6 Months)
 
-### Phase 7: Analytics & Reporting
-- [ ] Student performance analytics
-- [ ] Course and exam statistics
-- [ ] Instructor dashboards with insights
-- [ ] Admin reporting tools
-- [ ] Data export functionality
+- Video content integration
+- Interactive learning materials
+- Discussion forums for each course
+- Feedback and rating system for courses and exams
 
-### Phase 8: Enhanced User Experience
-- [ ] Notifications system
-- [ ] Dark mode
-- [ ] Accessibility improvements
-- [ ] Mobile optimizations
-- [ ] Performance enhancements
+### Long-term (6+ Months)
 
-### Phase 9: Advanced Exam Features
-- [ ] Question randomization
-- [ ] Question pools
-- [ ] Proctoring features
-- [ ] Cheating prevention
-- [ ] Custom exam branding
+- Live webinar/classroom integration
+- Certification generation and verification
+- Learning paths with prerequisite courses
+- Integration with third-party learning content providers
 
-## Version 3.0 - Advanced Features
+## Technical Improvements
 
-### Phase 10: Integrations
-- [ ] Learning Management System (LMS) integrations
-- [ ] Single Sign-On (SSO) options
-- [ ] Calendar integrations
-- [ ] Email notifications
-- [ ] API for third-party tools
+- Enhanced error handling and validation
+- Performance optimizations for large courses and exams
+- Improved test coverage
+- Accessibility compliance (WCAG)
+- Enhanced data export options
 
-## Version 4.0 - Enterprise Features
+## Recent Updates
 
-### Phase 11: Enterprise Management
-- [ ] Multi-institution support
-- [ ] Bulk user management
-- [ ] Advanced permissions
-- [ ] Custom roles
-- [ ] Organization settings
-
-### Phase 12: Enhanced Security
-- [ ] Advanced authentication options
-- [ ] Two-factor authentication
-- [ ] Session management
-- [ ] Audit logging
-- [ ] Compliance features
-
-## Ongoing Initiatives
-- Bug fixes and stability improvements
-- Regular security updates
-- Performance optimization
-- User feedback incorporation
-- Documentation updates
+- Fixed exam candidate assignment issues
+- Improved exam visibility for enrolled candidates
+- Enhanced question import functionality
+- Added support for question pooling in exams
+- Fixed exam session management and state tracking

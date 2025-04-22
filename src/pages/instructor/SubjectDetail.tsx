@@ -14,10 +14,10 @@ import { ROUTES } from "@/constants/routes";
 const SubjectDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { subjects, getSubject, fetchSubjects } = useSubjects();
+  const { subjects, getSubject, fetchSubjects, courseSubjects } = useSubjects();
   const { courses } = useCourses();
   const [subject, setSubject] = useState<any>(null);
-  const [course, setCourse] = useState<any>(null);
+  const [primaryCourseId, setPrimaryCourseId] = useState<string | null>(null);
   
   useEffect(() => {
     // Make sure we fetch all subjects, including those without questions
@@ -30,18 +30,23 @@ const SubjectDetail = () => {
       if (foundSubject) {
         setSubject(foundSubject);
         
-        const relatedCourse = courses.find(c => c.id === foundSubject.courseId);
-        if (relatedCourse) {
-          setCourse(relatedCourse);
+        // Find the first course associated with this subject
+        const firstCourseSubject = courseSubjects.find(cs => cs.subjectId === id);
+        if (firstCourseSubject) {
+          setPrimaryCourseId(firstCourseSubject.courseId);
         }
       } else {
         // Subject not found, redirect
         navigate(ROUTES.INSTRUCTOR_SUBJECTS);
       }
     }
-  }, [id, getSubject, subjects, courses, navigate]);
+  }, [id, getSubject, subjects, courseSubjects, navigate]);
 
-  if (!subject || !course) {
+  // Get the primary course object
+  const primaryCourse = primaryCourseId ? 
+    courses.find(c => c.id === primaryCourseId) : null;
+
+  if (!subject) {
     return (
       <InstructorLayout>
         <div className="flex justify-center items-center h-64">
@@ -56,17 +61,29 @@ const SubjectDetail = () => {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="mb-2"
-              onClick={() => navigate(`${ROUTES.INSTRUCTOR_COURSES}/${course.id}`)}
-            >
-              <ArrowLeft size={16} className="mr-1" />
-              Back to {course.title}
-            </Button>
+            {primaryCourse && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="mb-2"
+                onClick={() => navigate(`${ROUTES.INSTRUCTOR_COURSES}/${primaryCourse.id}`)}
+              >
+                <ArrowLeft size={16} className="mr-1" />
+                Back to {primaryCourse.title}
+              </Button>
+            )}
             <h1 className="text-3xl font-bold">{subject.title}</h1>
             <p className="text-gray-500 mt-1">{subject.description}</p>
+            
+            {/* Show associated courses */}
+            {subject.courses && subject.courses.length > 0 && (
+              <div className="mt-2">
+                <p className="text-sm text-gray-500">
+                  <span className="font-medium">Linked to courses: </span>
+                  {subject.courses.map(c => c.title).join(', ')}
+                </p>
+              </div>
+            )}
           </div>
         </div>
 

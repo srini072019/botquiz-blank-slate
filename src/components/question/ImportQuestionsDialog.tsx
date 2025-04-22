@@ -58,7 +58,11 @@ const ImportQuestionsDialog = ({
   
   const handleImport = async () => {
     if (parsedQuestions.length > 0) {
-      await onImport(parsedQuestions);
+      try {
+        await onImport(parsedQuestions);
+      } catch (err) {
+        console.error("Error during import:", err);
+      }
     }
   };
 

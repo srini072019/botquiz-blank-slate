@@ -1,12 +1,13 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { ExamSession, ExamSessionStatus, ExamAnswer, ExamResult } from "@/types/exam-session.types";
+import { ExamSession, ExamSessionStatus, ExamResult } from "@/types/exam-session.types";
 import { Exam } from "@/types/exam.types";
 import { Question } from "@/types/question.types";
 import { v4 as uuidv4 } from "uuid";
 import { useExamSessionState } from "./exam-session/useExamSessionState";
 import { calculateExamResults } from "./exam-session/calculateExamResults";
+import { supabase } from "@/integrations/supabase/client";
 
 export const useExamSession = () => {
   const { examSessions, setExamSessions } = useExamSessionState();
@@ -15,7 +16,6 @@ export const useExamSession = () => {
   const startExam = async (examId: string, candidateId: string, timeLimit: number): Promise<ExamSession | undefined> => {
     setIsLoading(true);
     try {
-      // Mock API call - will be replaced with Supabase
       const now = new Date();
       const expiresAt = new Date(now.getTime() + timeLimit * 60 * 1000);
       
@@ -29,6 +29,19 @@ export const useExamSession = () => {
         currentQuestionIndex: 0,
         status: ExamSessionStatus.IN_PROGRESS
       };
+      
+      // Update the exam_candidate_assignments status to 'in_progress'
+      const { error: updateError } = await supabase
+        .from('exam_candidate_assignments')
+        .update({ status: 'in_progress' })
+        .eq('exam_id', examId)
+        .eq('candidate_id', candidateId);
+        
+      if (updateError) {
+        console.error("Error updating assignment status:", updateError);
+      } else {
+        console.log("Updated assignment status to in_progress");
+      }
       
       setExamSessions([...examSessions, newExamSession]);
       toast.success("Exam started successfully");
@@ -155,6 +168,19 @@ export const useExamSession = () => {
         passed: results.passed,
         timeTaken: results.timeTaken
       };
+
+      // Update the exam_candidate_assignments status to 'completed'
+      const { error: updateError } = await supabase
+        .from('exam_candidate_assignments')
+        .update({ status: 'completed' })
+        .eq('exam_id', session.examId)
+        .eq('candidate_id', session.candidateId);
+        
+      if (updateError) {
+        console.error("Error updating assignment status:", updateError);
+      } else {
+        console.log("Updated assignment status to completed");
+      }
 
       // Update state
       setExamSessions(examSessions.map(s => 

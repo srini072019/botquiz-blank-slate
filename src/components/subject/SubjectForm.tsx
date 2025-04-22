@@ -9,17 +9,18 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SubjectFormData } from "@/types/subject.types";
 import { Course } from "@/types/course.types";
+import { Checkbox } from "@/components/ui/checkbox";
 
 // Define form schema
 const subjectSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters").max(100),
   description: z.string().min(10, "Description must be at least 10 characters").max(500),
-  courseId: z.string().min(1, "Please select a course"),
+  courseIds: z.array(z.string()).min(1, "Please select at least one course"),
   order: z.number().optional(),
 });
 
 interface SubjectFormProps {
-  initialData?: SubjectFormData;
+  initialData?: Partial<SubjectFormData>;
   courses: Course[];
   onSubmit: (data: SubjectFormData) => Promise<void>;
   isSubmitting: boolean;
@@ -30,12 +31,29 @@ const SubjectForm = ({ initialData, courses, onSubmit, isSubmitting, courseIdFix
   // Initialize form
   const form = useForm<SubjectFormData>({
     resolver: zodResolver(subjectSchema),
-    defaultValues: initialData || {
-      title: "",
-      description: "",
-      courseId: courseIdFixed && courses.length > 0 ? courses[0].id : "",
+    defaultValues: {
+      title: initialData?.title || "",
+      description: initialData?.description || "",
+      courseIds: initialData?.courseIds || (courseIdFixed && courses.length > 0 ? [courses[0].id] : []),
+      order: initialData?.order,
     },
   });
+
+  const watchCourseIds = form.watch("courseIds");
+
+  const toggleCourse = (courseId: string, checked: boolean) => {
+    const current = form.getValues("courseIds");
+    
+    if (checked && !current.includes(courseId)) {
+      form.setValue("courseIds", [...current, courseId], { shouldValidate: true });
+    } else if (!checked && current.includes(courseId)) {
+      form.setValue(
+        "courseIds",
+        current.filter(id => id !== courseId),
+        { shouldValidate: true }
+      );
+    }
+  };
 
   return (
     <Form {...form}>
@@ -72,42 +90,41 @@ const SubjectForm = ({ initialData, courses, onSubmit, isSubmitting, courseIdFix
           )}
         />
 
-        {!courseIdFixed && (
-          <FormField
-            control={form.control}
-            name="courseId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Course</FormLabel>
-                <Select 
-                  onValueChange={field.onChange} 
-                  defaultValue={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a course" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {courses.map((course) => (
-                      <SelectItem key={course.id} value={course.id}>
-                        {course.title}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        )}
+        <FormField
+          control={form.control}
+          name="courseIds"
+          render={() => (
+            <FormItem>
+              <FormLabel>Courses</FormLabel>
+              <div className="space-y-2">
+                {courses.map((course) => (
+                  <div key={course.id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`course-${course.id}`}
+                      checked={watchCourseIds.includes(course.id)}
+                      onCheckedChange={(checked) => toggleCourse(course.id, !!checked)}
+                      disabled={courseIdFixed && courses.length === 1}
+                    />
+                    <label 
+                      htmlFor={`course-${course.id}`}
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      {course.title}
+                    </label>
+                  </div>
+                ))}
+              </div>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <Button 
           type="submit" 
           className="w-full" 
           disabled={isSubmitting}
         >
-          {isSubmitting ? "Saving..." : initialData ? "Update Subject" : "Create Subject"}
+          {isSubmitting ? "Saving..." : initialData?.title ? "Update Subject" : "Create Subject"}
         </Button>
       </form>
     </Form>

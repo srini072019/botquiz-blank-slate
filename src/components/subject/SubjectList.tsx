@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Edit, Plus, Trash2, FileText } from "lucide-react";
-import { Subject } from "@/types/subject.types";
+import { Subject, SubjectFormData } from "@/types/subject.types";
 import SubjectForm from "./SubjectForm";
 import { useSubjects } from "@/hooks/useSubjects";
 import { Course } from "@/types/course.types";
@@ -16,29 +16,27 @@ interface SubjectListProps {
 }
 
 const SubjectList = ({ courseId, courses }: SubjectListProps) => {
-  const { subjects: allSubjects, createSubject, updateSubject, deleteSubject, isLoading } = useSubjects();
+  const { subjects, courseSubjects, createSubject, updateSubject, deleteSubject, isLoading, getSubjectsByCourse } = useSubjects();
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   // Filter subjects for this course
-  const subjects = allSubjects.filter(subject => subject.courseId === courseId)
-    .sort((a, b) => a.order - b.order);
+  const courseSubjectsList = getSubjectsByCourse(courseId);
 
-  const handleCreateSubject = async (data: any) => {
-    await createSubject({
-      ...data,
-      courseId,
-    });
+  const handleCreateSubject = async (data: SubjectFormData) => {
+    // Ensure the current course is included
+    if (!data.courseIds.includes(courseId)) {
+      data.courseIds.push(courseId);
+    }
+    
+    await createSubject(data);
     setIsCreateDialogOpen(false);
   };
 
-  const handleUpdateSubject = async (data: any) => {
+  const handleUpdateSubject = async (data: SubjectFormData) => {
     if (selectedSubject) {
-      await updateSubject(selectedSubject.id, {
-        ...data,
-        courseId: selectedSubject.courseId,
-      });
+      await updateSubject(selectedSubject.id, data);
       setIsEditDialogOpen(false);
       setSelectedSubject(null);
     }
@@ -51,7 +49,15 @@ const SubjectList = ({ courseId, courses }: SubjectListProps) => {
   };
 
   const handleEditClick = (subject: Subject) => {
-    setSelectedSubject(subject);
+    // Find all course IDs this subject is associated with
+    const subjectCourseIds = courseSubjects
+      .filter(cs => cs.subjectId === subject.id)
+      .map(cs => cs.courseId);
+    
+    setSelectedSubject({
+      ...subject,
+      courses: courses.filter(c => subjectCourseIds.includes(c.id))
+    });
     setIsEditDialogOpen(true);
   };
 
@@ -77,11 +83,10 @@ const SubjectList = ({ courseId, courses }: SubjectListProps) => {
               courses={courses}
               onSubmit={handleCreateSubject}
               isSubmitting={isLoading}
-              courseIdFixed={true}
               initialData={{ 
                 title: "", 
                 description: "", 
-                courseId 
+                courseIds: [courseId]
               }}
             />
           </DialogContent>
@@ -89,8 +94,8 @@ const SubjectList = ({ courseId, courses }: SubjectListProps) => {
       </div>
 
       <div className="space-y-3">
-        {subjects.length > 0 ? (
-          subjects.map((subject) => (
+        {courseSubjectsList.length > 0 ? (
+          courseSubjectsList.map((subject) => (
             <Card key={subject.id}>
               <CardHeader className="p-4 pb-2">
                 <div className="flex justify-between items-start">
@@ -140,12 +145,11 @@ const SubjectList = ({ courseId, courses }: SubjectListProps) => {
               initialData={{
                 title: selectedSubject.title,
                 description: selectedSubject.description,
-                courseId: selectedSubject.courseId,
+                courseIds: selectedSubject.courses?.map(c => c.id) || [],
               }}
               courses={courses}
               onSubmit={handleUpdateSubject}
               isSubmitting={isLoading}
-              courseIdFixed={true}
             />
           )}
         </DialogContent>

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,9 +36,8 @@ export const useEnrollment = () => {
 
       if (error) throw error;
 
-      // Ensure data is an array before mapping
       const courses: Course[] = (data || [])
-        .filter(item => item.course) // Filter out any null courses
+        .filter(item => item.course)
         .map(({ course }) => ({
           id: course.id,
           title: course.title,
@@ -75,7 +75,7 @@ export const useEnrollment = () => {
     setIsLoading(true);
     try {
       console.log("Enrolling participants with emails:", emails);
-      
+
       // Query eligible_candidates view which contains user emails
       const { data: candidates, error: candidatesError } = await supabase
         .from('eligible_candidates')
@@ -87,15 +87,22 @@ export const useEnrollment = () => {
         throw candidatesError;
       }
 
-      // Ensure candidates is an array
+      // Find emails with no associated candidate
+      const missingEmails = emails.filter(email => !candidates?.some(c => c.email === email));
+      if (missingEmails.length > 0) {
+        toast.error(`These emails do not exist in the system: ${missingEmails.join(", ")}`);
+        return {
+          success: false,
+          message: `These emails are not in the system: ${missingEmails.join(", ")}`
+        };
+      }
+
       if (!candidates || !Array.isArray(candidates) || candidates.length === 0) {
         return {
           success: false,
           message: "No valid users found for the provided emails"
         };
       }
-
-      console.log("Found candidates:", candidates);
 
       // Create enrollment records for each user
       const enrollments = candidates.map(candidate => ({
@@ -111,7 +118,12 @@ export const useEnrollment = () => {
 
       if (enrollmentError) {
         console.error("Error creating enrollments:", enrollmentError);
-        throw enrollmentError;
+        let detail = enrollmentError?.message || String(enrollmentError);
+        toast.error(`Enrollment error: ${detail}`);
+        return {
+          success: false,
+          message: detail
+        };
       }
       
       toast.success(`Successfully enrolled ${candidates.length} participant(s)`);
@@ -121,8 +133,8 @@ export const useEnrollment = () => {
       };
     } catch (error) {
       console.error("Error enrolling participants:", error);
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
-      toast.error("Failed to enroll participants");
+      const errorMessage = (error as Error)?.message || "Unknown error";
+      toast.error("Failed to enroll participants: " + errorMessage);
       return {
         success: false,
         message: errorMessage
@@ -147,10 +159,7 @@ export const useEnrollment = () => {
           filter: `user_id=eq.${authState.user.id}`
         },
         async () => {
-          // Refresh the enrolled courses data
-          const courses = await getEnrolledCourses();
-          // You'll need to implement a callback to update the courses in the UI
-          console.log('Course enrollments updated:', courses);
+          await getEnrolledCourses();
         }
       )
       .subscribe();

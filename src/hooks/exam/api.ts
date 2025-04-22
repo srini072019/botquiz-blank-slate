@@ -70,7 +70,10 @@ export const createExamInApi = async (data: ExamFormData): Promise<string | null
       .select()
       .single();
 
-    if (examError) throw examError;
+    if (examError) {
+      console.error("Error creating exam:", examError);
+      throw examError;
+    }
     
     console.log("Exam created:", examData);
     
@@ -90,11 +93,14 @@ export const createExamInApi = async (data: ExamFormData): Promise<string | null
       if (questionsError) {
         console.error("Error adding questions to exam:", questionsError);
         throw questionsError;
+      } else {
+        console.log(`Successfully added ${examQuestions.length} questions to exam`);
       }
     }
     
-    // Assign exam to all enrolled candidates in the course
-    await assignExamToCandidates(examData.id, data.courseId);
+    // Always assign exam to candidates for the course, regardless of status
+    // We will set different assignment status based on whether it's published or not
+    await assignExamToCandidates(examData.id, data.courseId, data.status === 'published');
     
     toast.success("Exam created successfully");
     return examData.id;
@@ -106,9 +112,9 @@ export const createExamInApi = async (data: ExamFormData): Promise<string | null
 };
 
 // Helper function to assign exam to all candidates enrolled in the course
-const assignExamToCandidates = async (examId: string, courseId: string) => {
+const assignExamToCandidates = async (examId: string, courseId: string, isPublished: boolean = false) => {
   try {
-    console.log("Assigning exam to candidates. Exam ID:", examId, "Course ID:", courseId);
+    console.log(`Assigning exam to candidates. Exam ID: ${examId}, Course ID: ${courseId}, Published: ${isPublished}`);
     
     // Get all candidates enrolled in the course
     const { data: enrollments, error: enrollmentsError } = await supabase
@@ -121,30 +127,99 @@ const assignExamToCandidates = async (examId: string, courseId: string) => {
       throw enrollmentsError;
     }
     
-    console.log("Found enrollments:", enrollments);
+    console.log(`Found ${enrollments?.length || 0} enrollments for course:`, courseId);
     
-    if (enrollments.length === 0) {
+    if (!enrollments || enrollments.length === 0) {
       console.log("No candidates enrolled in this course");
       return;
+    }
+    
+    // Get exam details to determine initial status
+    const { data: examData, error: examError } = await supabase
+      .from('exams')
+      .select('start_date, end_date')
+      .eq('id', examId)
+      .single();
+      
+    if (examError) {
+      console.error("Error fetching exam details:", examError);
+      throw examError;
+    }
+    
+    // Determine exam status based on dates and whether it's published
+    const now = new Date();
+    const startDate = examData.start_date ? new Date(examData.start_date) : null;
+    
+    // Default to 'pending' if not published
+    let initialStatus = isPublished ? 'available' : 'pending';
+    
+    // If published and start date is in the future, set to 'scheduled'
+    if (isPublished && startDate && startDate > now) {
+      initialStatus = 'scheduled';
     }
     
     // Create assignments for each candidate
     const assignments = enrollments.map(enrollment => ({
       exam_id: examId,
       candidate_id: enrollment.user_id,
-      status: 'available',
+      status: initialStatus,
     }));
+    
+    console.log(`Creating assignments with status: ${initialStatus} for ${enrollments.length} candidates`);
+    
+    // First check if assignments already exist to avoid duplicates
+    const { data: existingAssignments, error: checkError } = await supabase
+      .from('exam_candidate_assignments')
+      .select('candidate_id')
+      .eq('exam_id', examId)
+      .in('candidate_id', enrollments.map(e => e.user_id));
+      
+    if (checkError) {
+      console.error("Error checking existing assignments:", checkError);
+      throw checkError;
+    }
+    
+    // Filter out candidates that already have assignments
+    const existingCandidateIds = existingAssignments?.map(a => a.candidate_id) || [];
+    const newAssignments = assignments.filter(
+      a => !existingCandidateIds.includes(a.candidate_id)
+    );
+    
+    if (newAssignments.length === 0) {
+      console.log("All candidates already have assignments for this exam");
+      return;
+    }
+    
+    console.log(`Creating ${newAssignments.length} new assignments with status: ${initialStatus}`);
     
     const { error: assignmentError } = await supabase
       .from('exam_candidate_assignments')
-      .insert(assignments);
+      .insert(newAssignments);
     
     if (assignmentError) {
       console.error("Error assigning exam to candidates:", assignmentError);
       throw assignmentError;
     }
     
-    console.log("Exam assigned to", assignments.length, "candidates");
+    console.log(`Exam successfully assigned to ${newAssignments.length} new candidates`);
+    
+    // If exam is not published but has existing assignments, we need to update those to pending
+    if (!isPublished && existingCandidateIds.length > 0) {
+      console.log(`Updating ${existingCandidateIds.length} existing assignments to 'pending' status`);
+      
+      const { error: updateError } = await supabase
+        .from('exam_candidate_assignments')
+        .update({ status: 'pending' })
+        .eq('exam_id', examId)
+        .in('candidate_id', existingCandidateIds);
+        
+      if (updateError) {
+        console.error("Error updating existing assignments:", updateError);
+        throw updateError;
+      }
+      
+      console.log("Existing assignments updated to 'pending'");
+    }
   } catch (error) {
     console.error("Error in assignExamToCandidates:", error);
     toast.error("Failed to assign exam to candidates");
@@ -196,6 +271,9 @@ export const updateExamInApi = async (id: string, data: ExamFormData): Promise<b
         
       if (questionsError) throw questionsError;
     }
+
+    // Update assignment statuses based on exam status
+    await assignExamToCandidates(id, data.courseId, data.status === ExamStatus.PUBLISHED);
     
     toast.success("Exam updated successfully");
     return true;
@@ -227,6 +305,17 @@ export const deleteExamInApi = async (id: string): Promise<boolean> => {
 
 export const updateExamStatusInApi = async (id: string, status: ExamStatus): Promise<boolean> => {
   try {
+    const { data: exam, error: fetchError } = await supabase
+      .from('exams')
+      .select('course_id')
+      .eq('id', id)
+      .single();
+      
+    if (fetchError) {
+      console.error("Error fetching exam details:", fetchError);
+      throw fetchError;
+    }
+    
     const { error } = await supabase
       .from('exams')
       .update({
@@ -237,17 +326,9 @@ export const updateExamStatusInApi = async (id: string, status: ExamStatus): Pro
 
     if (error) throw error;
     
-    // If publishing the exam, make sure to assign to candidates
-    if (status === ExamStatus.PUBLISHED) {
-      const { data: exam } = await supabase
-        .from('exams')
-        .select('course_id')
-        .eq('id', id)
-        .single();
-        
-      if (exam) {
-        await assignExamToCandidates(id, exam.course_id);
-      }
+    // Update exam candidate assignments based on new status
+    if (exam) {
+      await assignExamToCandidates(id, exam.course_id, status === ExamStatus.PUBLISHED);
     }
     
     toast.success(`Exam ${status.toLowerCase()} successfully`);
@@ -258,3 +339,4 @@ export const updateExamStatusInApi = async (id: string, status: ExamStatus): Pro
     return false;
   }
 };
+

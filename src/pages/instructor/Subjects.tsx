@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Plus } from "lucide-react";
 import InstructorLayout from "@/layouts/InstructorLayout";
@@ -11,11 +12,9 @@ import { SubjectFormData } from "@/types/subject.types";
 
 const InstructorSubjects = () => {
   const { courses } = useCourses("instructor-1"); // Will use actual instructor ID
-  const { subjects, createSubject, updateSubject, deleteSubject, isLoading, fetchSubjects } = useSubjects();
+  const { subjects, createSubject, updateSubject, deleteSubject, isLoading, fetchSubjects, courseSubjects } = useSubjects();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editSubjectId, setEditSubjectId] = useState<string | null>(null);
-
-  const instructorSubjects = subjects;
 
   // Explicitly fetch subjects on component mount
   useEffect(() => {
@@ -23,14 +22,19 @@ const InstructorSubjects = () => {
   }, []);
 
   // Group subjects by course
-  const subjectsByCourse = instructorSubjects.reduce((acc, subject) => {
-    const courseId = subject.courseId;
-    if (!acc[courseId]) {
-      acc[courseId] = [];
+  const subjectsByCourse: Record<string, any[]> = {};
+  
+  // First get all courses with the subjects they contain
+  courseSubjects.forEach(cs => {
+    if (!subjectsByCourse[cs.courseId]) {
+      subjectsByCourse[cs.courseId] = [];
     }
-    acc[courseId].push(subject);
-    return acc;
-  }, {} as Record<string, typeof subjects>);
+    
+    const subject = subjects.find(s => s.id === cs.subjectId);
+    if (subject && !subjectsByCourse[cs.courseId].some(s => s.id === subject.id)) {
+      subjectsByCourse[cs.courseId].push(subject);
+    }
+  });
 
   const handleCreateSubject = async (data: SubjectFormData) => {
     await createSubject(data);
@@ -154,6 +158,9 @@ const InstructorSubjects = () => {
             <SubjectForm
               initialData={{
                 ...subjects.find(s => s.id === editSubjectId)!,
+                courseIds: courseSubjects
+                  .filter(cs => cs.subjectId === editSubjectId)
+                  .map(cs => cs.courseId)
               }}
               courses={courses}
               onSubmit={handleUpdateSubject}

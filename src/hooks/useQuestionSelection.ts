@@ -24,7 +24,10 @@ export const useQuestionSelection = ({ form, questions, subjects }: UseQuestionS
     if (watchCourseId) {
       setSelectedCourseId(watchCourseId);
       
-      const courseSubjects = subjects.filter(subject => subject.courseId === watchCourseId);
+      // For each subject, check if it's linked to the selected course
+      const courseSubjects = subjects.filter(subject => 
+        subject.courses?.some(course => course.id === watchCourseId)
+      );
       
       const courseQuestions = questions.filter(question => 
         courseSubjects.some(subject => subject.id === question.subjectId)

@@ -5,8 +5,7 @@ export interface Subject {
   id: string;
   title: string;
   description: string;
-  courseId: string;
-  course?: Course;
+  courses?: Course[];
   order: number;
   createdAt: Date;
   updatedAt: Date;
@@ -15,6 +14,13 @@ export interface Subject {
 export interface SubjectFormData {
   title: string;
   description: string;
-  courseId: string;
+  courseIds: string[];
   order?: number;
+}
+
+export interface CourseSubject {
+  id: string;
+  subjectId: string;
+  courseId: string;
+  createdAt: Date;
 }

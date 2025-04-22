@@ -34,43 +34,74 @@ const Exams = () => {
       try {
         setLoading(true);
         console.log("Fetching exams for candidate ID:", authState.user.id);
-        const { data, error } = await supabase
+        
+        // First get all assignments for this candidate
+        const { data: assignments, error: assignmentsError } = await supabase
           .from('exam_candidate_assignments')
           .select(`
+            id,
             status,
-            exam:exams (
-              id,
-              title,
-              description,
-              time_limit,
-              start_date,
-              end_date,
-              exam_questions(count)
-            )
+            exam_id
           `)
           .eq('candidate_id', authState.user.id);
-
-        if (error) {
-          console.error("Error fetching exams:", error);
+          
+        if (assignmentsError) {
+          console.error('Error fetching exam assignments:', assignmentsError);
+          throw assignmentsError;
+        }
+        
+        console.log("Assignments found:", assignments);
+        
+        if (!assignments || assignments.length === 0) {
+          console.log("No assignments found for this candidate");
+          setExams([]);
+          setLoading(false);
+          return;
+        }
+        
+        // Extract exam IDs
+        const examIds = assignments.map(a => a.exam_id);
+        
+        // Fetch exam details
+        const { data: examData, error: examError } = await supabase
+          .from('exams')
+          .select(`
+            id,
+            title,
+            description,
+            time_limit,
+            start_date,
+            end_date,
+            exam_questions(count)
+          `)
+          .in('id', examIds);
+          
+        if (examError) {
+          console.error("Error fetching exams:", examError);
           toast.error("Failed to load exams");
-          throw error;
+          throw examError;
         }
 
-        console.log("Raw exam data:", data);
+        console.log("Raw exam data:", examData);
 
         // Process the data
-        const processedExams = data
-          .filter(item => item.exam) // Filter out null exams
-          .map(item => ({
-            id: item.exam.id,
-            title: item.exam.title,
-            description: item.exam.description || "",
-            time_limit: item.exam.time_limit,
-            questions_count: item.exam.exam_questions?.length || 0,
-            start_date: item.exam.start_date,
-            end_date: item.exam.end_date,
-            status: item.status as 'available' | 'scheduled' | 'completed'
-          }));
+        const processedExams = examData
+          .filter(item => item) // Filter out null exams
+          .map(item => {
+            // Find the corresponding assignment to get status
+            const assignment = assignments.find(a => a.exam_id === item.id);
+            
+            return {
+              id: item.id,
+              title: item.title,
+              description: item.description || "",
+              time_limit: item.time_limit,
+              questions_count: item.exam_questions?.length || 0,
+              start_date: item.start_date,
+              end_date: item.end_date,
+              status: assignment?.status as 'available' | 'scheduled' | 'completed'
+            };
+          });
 
         setExams(processedExams);
         console.log("Processed exams:", processedExams);

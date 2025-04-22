@@ -29,50 +29,78 @@ const ExamsList = () => {
       if (!authState.user?.id) return;
 
       try {
+        setLoading(true);
         console.log("Fetching exams for candidate ID:", authState.user.id);
-        
-        const { data, error } = await supabase
+
+        // Fetch assignments for this candidate
+        const { data: assignments, error: assignmentsError } = await supabase
           .from('exam_candidate_assignments')
           .select(`
             id,
             status,
-            exam_id,
-            exam:exams (
-              id,
-              title,
-              time_limit,
-              end_date,
-              course:courses (
-                title
-              )
-            )
+            exam_id
           `)
-          .eq('candidate_id', authState.user.id)
-          .limit(5); // Only show 5 most recent exams
+          .eq('candidate_id', authState.user.id);
 
-        if (error) {
-          console.error('Error fetching exams:', error);
-          throw error;
+        if (assignmentsError) {
+          console.error('Error fetching exam assignments:', assignmentsError);
+          throw assignmentsError;
         }
 
-        console.log("Raw exam data:", data);
+        console.log("Raw exam assignments:", assignments);
+        
+        if (!assignments || assignments.length === 0) {
+          console.log("No exam assignments found for this candidate");
+          setExams([]);
+          setLoading(false);
+          return;
+        }
 
-        // Filter out any null exam values and format the data
-        const formattedExams = data
-          .filter(item => item.exam) 
-          .map(item => ({
-            id: item.exam.id,
-            title: item.exam.title,
-            course: {
-              title: item.exam.course.title
-            },
-            time_limit: item.exam.time_limit,
-            end_date: item.exam.end_date,
-            status: item.status as 'scheduled' | 'available' | 'completed'
-          }));
+        // Extract exam IDs from assignments
+        const examIds = assignments.map(assignment => assignment.exam_id);
+        
+        // Fetch exam details for these IDs
+        const { data: examData, error: examError } = await supabase
+          .from('exams')
+          .select(`
+            id,
+            title,
+            time_limit,
+            end_date,
+            course:courses (
+              title
+            )
+          `)
+          .in('id', examIds);
 
+        if (examError) {
+          console.error('Error fetching exam details:', examError);
+          throw examError;
+        }
+
+        console.log("Raw exam data:", examData);
+
+        // Combine exam data with assignment status
+        const formattedExams = examData
+          .filter(exam => exam && exam.id)
+          .map(exam => {
+            // Find the matching assignment to get status
+            const assignment = assignments.find(a => a.exam_id === exam.id);
+            
+            return {
+              id: exam.id,
+              title: exam.title,
+              course: {
+                title: exam.course?.title || "Untitled Course"
+              },
+              time_limit: exam.time_limit,
+              end_date: exam.end_date,
+              status: assignment?.status as 'scheduled' | 'available' | 'completed'
+            };
+          });
+
+        console.log("Formatted exams for candidate:", formattedExams);
         setExams(formattedExams);
-        console.log("Formatted exams:", formattedExams);
       } catch (error) {
         console.error('Error fetching exams:', error);
         toast.error('Failed to load exams');
@@ -108,7 +136,7 @@ const ExamsList = () => {
               key={exam.id}
               title={exam.title}
               course={exam.course.title}
-              date={new Date(exam.end_date).toLocaleDateString()}
+              date={exam.end_date ? new Date(exam.end_date).toLocaleDateString() : ""}
               duration={`${exam.time_limit} minutes`}
               status={exam.status}
               examId={exam.id}

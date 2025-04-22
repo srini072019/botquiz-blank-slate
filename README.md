@@ -1,105 +1,67 @@
 
-# Assessify - Online MCQ Exam Platform
+# LaunchX LMS
 
-## Project Overview
-Assessify is a modern web application built with Vite, React, Tailwind CSS, and ShadCN UI. It serves as an online MCQ (Multiple Choice Questions) exam platform that is fully mobile-ready and designed for educational institutions and organizations.
+LaunchX is a modern Learning Management System built for educational institutions and corporate training.
 
 ## Features
 
-The application supports three user roles:
-
-1. **Admin**
-   - Manage users (instructors and candidates)
-   - Oversee courses, subjects, exams
-   - View statistics and reports
-
-2. **Instructors**
-   - Create and manage courses and subjects
-   - Build question banks
-   - Create and configure exams
-   - Review exam results
-
-3. **Candidates**
-   - Enroll in courses
-   - Take exams
-   - View results and progress
-
-## Technical Stack
-
-- **Frontend Framework**: React with TypeScript
-- **Build Tool**: Vite
-- **CSS Framework**: Tailwind CSS
-- **UI Components**: ShadCN UI
-- **Routing**: React Router
-- **State Management**: React Query
-- **Future Database**: Supabase (planned integration)
-
-## Development Roadmap
-
-### Phase 1: Core Structure & Authentication
-- [x] Project setup with Vite, React, TypeScript
-- [x] UI foundation with Tailwind CSS and ShadCN
-- [x] User interfaces for all three roles
-- [ ] Authentication with Supabase
-
-### Phase 2: Course & Subject Management
-- [ ] Course CRUD operations
-- [ ] Subject CRUD operations
-- [ ] Course enrollment system
-- [ ] Admin and instructor dashboards
-
-### Phase 3: Question Bank & Exam System
-- [ ] Question bank creation and management
-- [ ] Exam creation and configuration
-- [ ] Exam taking interface
-- [ ] Result calculation and display
-
-### Phase 4: Advanced Features
-- [ ] Analytics and reporting
-- [ ] Notifications system
-- [ ] Export functionality
-- [ ] Mobile optimizations
+- **Course Management**: Create, edit, and manage courses with ease
+- **Exam Creation**: Build exams with multiple question types, including multiple choice and multiple answer
+- **Question Bank**: Maintain a repository of questions organized by subjects
+- **Candidate Enrollment**: Enroll candidates in courses and automatically assign them to exams
+- **Exam Taking**: Secure exam environment with time limits and automatic grading
+- **Analytics**: Track candidate progress and exam results
 
 ## Getting Started
 
-1. **Clone the repository**
-   ```
-   git clone [repository-url]
-   cd assessify
-   ```
+### Prerequisites
 
-2. **Install dependencies**
-   ```
-   npm install
-   ```
+- Node.js 18+
+- npm or yarn package manager
+- Supabase account (for database and authentication)
 
-3. **Start the development server**
-   ```
-   npm run dev
-   ```
+### Installation
 
-4. **Build for production**
-   ```
-   npm run build
-   ```
+1. Clone the repository
+```
+git clone https://github.com/your-username/launchx-lms.git
+cd launchx-lms
+```
 
-## Project Structure
+2. Install dependencies
+```
+npm install
+```
 
-The project follows a component-based architecture with a clear separation of concerns:
+3. Configure environment variables
+Create a `.env` file in the root directory with the following variables:
+```
+VITE_SUPABASE_URL=your-supabase-url
+VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
+```
 
-- `src/components`: Reusable UI components
-- `src/pages`: Individual page components
-- `src/layouts`: Layout wrappers for different sections
-- `src/hooks`: Custom React hooks
-- `src/services`: API service functions
-- `src/types`: TypeScript type definitions
-- `src/constants`: Application constants
-- `src/utils`: Utility functions
+4. Start the development server
+```
+npm run dev
+```
 
-## Contributing
+## Tech Stack
 
-Please read our contribution guidelines before submitting pull requests.
+- React with TypeScript
+- Vite for fast builds
+- Tailwind CSS with shadcn/ui components
+- Supabase for backend (authentication, database, storage)
+- Tanstack React Query for data fetching
+- React Router for navigation
+- React Hook Form for form handling
+- Zod for validation
+
+## User Roles
+
+- **Instructors**: Create and manage courses, subjects, questions, and exams
+- **Candidates**: Enroll in courses, take exams, and view results
+- **Administrators**: Manage users and system settings
 
 ## License
 
-This project is licensed under the MIT License.
+This project is licensed under the MIT License - see the LICENSE file for details.

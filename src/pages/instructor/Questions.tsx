@@ -66,11 +66,13 @@ const QuestionsPage = () => {
       // Process questions one by one
       for (const questionData of questionsData) {
         try {
+          console.log("Importing question:", questionData);
           const success = await createQuestion(questionData);
           if (success) {
             successCount++;
           } else {
             errorCount++;
+            console.error("Failed to create question, no error thrown but operation unsuccessful");
           }
         } catch (err) {
           console.error("Error creating question:", err);
