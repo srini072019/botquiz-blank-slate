@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import CandidateLayout from "@/layouts/CandidateLayout";
 import { Loader2 } from "lucide-react";

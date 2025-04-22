@@ -190,8 +190,10 @@ const assignExamToCandidates = async (examId: string, courseId: string, isPublis
     
     console.log(`Creating ${newAssignments.length} new assignments with status: ${initialStatus}`, newAssignments);
     
-    // Try batch insert first
+    // Try batch insert with detailed logging
     try {
+      console.log("Attempting batch insert with assignments:", JSON.stringify(newAssignments));
+      
       const { data, error: assignmentError } = await supabase
         .from('exam_candidate_assignments')
         .insert(newAssignments)
@@ -200,6 +202,17 @@ const assignExamToCandidates = async (examId: string, courseId: string, isPublis
       if (assignmentError) {
         console.error("Error assigning exam to candidates in batch:", assignmentError);
         console.log("Error details:", JSON.stringify(assignmentError));
+        
+        // Check if the error is due to invalid status values
+        if (assignmentError.message && assignmentError.message.includes('violates check constraint')) {
+          console.error("Status value error. Make sure status is one of: 'pending', 'scheduled', 'available', 'completed'");
+        }
+        
+        // Check if the error is due to foreign key constraints
+        if (assignmentError.message && assignmentError.message.includes('violates foreign key constraint')) {
+          console.error("Foreign key constraint error. Make sure all candidate_id values exist in the referenced table");
+        }
+        
         // Fall back to individual inserts
         throw assignmentError;
       } else {
@@ -265,10 +278,10 @@ const assignExamToCandidates = async (examId: string, courseId: string, isPublis
     }
     
     // Check if the status constraint might be the issue
-    console.log("This might be due to an invalid status value. Check that the status values match the allowed values in the database constraint.");
+    console.log("This might be due to an invalid status value. Ensure status is one of: 'pending', 'scheduled', 'available', 'completed'");
     
     // Check if user_id foreign key constraint might be the issue
-    console.log("This might also be due to a foreign key constraint. Check that candidate_id values exist in the referenced table.");
+    console.log("This might also be due to a foreign key constraint. Check that candidate_id values exist in the referenced table");
     
     toast.error("Failed to assign exam to candidates. Check console for details.");
   }
