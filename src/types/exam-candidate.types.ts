@@ -6,8 +6,10 @@ export interface ExamCandidate {
 }
 
 export interface ExamCandidateAssignment {
+  id?: string;
   examId: string;
   candidateId: string;
-  assignedAt: Date;
-  status: 'pending' | 'completed';
+  assignedAt?: Date;
+  status: 'pending' | 'scheduled' | 'available' | 'completed';
+  createdAt?: Date;
 }

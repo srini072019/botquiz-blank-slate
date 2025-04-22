@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Exam, ExamFormData, ExamStatus } from "@/types/exam.types";
 import { toast } from "sonner";
@@ -190,18 +189,48 @@ const assignExamToCandidates = async (examId: string, courseId: string, isPublis
       return;
     }
     
-    console.log(`Creating ${newAssignments.length} new assignments with status: ${initialStatus}`);
+    console.log(`Creating ${newAssignments.length} new assignments with status: ${initialStatus}`, newAssignments);
     
-    const { error: assignmentError } = await supabase
-      .from('exam_candidate_assignments')
-      .insert(newAssignments);
-    
-    if (assignmentError) {
-      console.error("Error assigning exam to candidates:", assignmentError);
-      throw assignmentError;
+    // Use individual insert calls if batch insert fails
+    try {
+      const { error: assignmentError } = await supabase
+        .from('exam_candidate_assignments')
+        .insert(newAssignments);
+      
+      if (assignmentError) {
+        console.error("Error assigning exam to candidates in batch:", assignmentError);
+        // Fall back to individual inserts
+        throw assignmentError;
+      } else {
+        console.log(`Exam successfully assigned to ${newAssignments.length} new candidates in batch`);
+      }
+    } catch (batchError) {
+      console.log("Falling back to individual assignment inserts");
+      
+      // Try individual inserts
+      let successCount = 0;
+      for (const assignment of newAssignments) {
+        try {
+          const { error } = await supabase
+            .from('exam_candidate_assignments')
+            .insert(assignment);
+            
+          if (error) {
+            console.error(`Error assigning exam to candidate ${assignment.candidate_id}:`, error);
+          } else {
+            successCount++;
+          }
+        } catch (err) {
+          console.error(`Exception assigning exam to candidate ${assignment.candidate_id}:`, err);
+        }
+      }
+      
+      console.log(`Individually assigned exam to ${successCount} out of ${newAssignments.length} candidates`);
+      
+      if (successCount === 0) {
+        throw new Error("Failed to assign exam to any candidates");
+      }
     }
-    
-    console.log(`Exam successfully assigned to ${newAssignments.length} new candidates`);
     
     // If exam is not published but has existing assignments, we need to update those to pending
     if (!isPublished && existingCandidateIds.length > 0) {
@@ -222,7 +251,17 @@ const assignExamToCandidates = async (examId: string, courseId: string, isPublis
     }
   } catch (error) {
     console.error("Error in assignExamToCandidates:", error);
-    toast.error("Failed to assign exam to candidates");
+    
+    // Add more detailed error logging
+    if (error instanceof Error) {
+      console.error("Error message:", error.message);
+      console.error("Error stack:", error.stack);
+    }
+    
+    // Check if user_id foreign key constraint might be the issue
+    console.log("This might be due to a foreign key constraint. Check that candidate_id values exist in the referenced table.");
+    
+    toast.error("Failed to assign exam to candidates. Check console for details.");
   }
 };
 
@@ -339,4 +378,3 @@ export const updateExamStatusInApi = async (id: string, status: ExamStatus): Pro
     return false;
   }
 };
-
