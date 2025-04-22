@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { examCandidateAssignmentColumns } from "@/types/exam-candidate.types";
 
 interface Exam {
   id: string;
@@ -38,9 +39,9 @@ const ExamsList = () => {
           .select(`
             id,
             status,
-            exam_id
+            ${examCandidateAssignmentColumns.examId}
           `)
-          .eq('candidate_id', authState.user.id);
+          .eq(examCandidateAssignmentColumns.candidateId, authState.user.id);
 
         if (assignmentsError) {
           console.error('Error fetching exam assignments:', assignmentsError);
@@ -57,7 +58,7 @@ const ExamsList = () => {
         }
 
         // Extract exam IDs from assignments
-        const examIds = assignments.map(assignment => assignment.exam_id);
+        const examIds = assignments.map(assignment => assignment[examCandidateAssignmentColumns.examId]);
         
         // Fetch exam details for these IDs
         const { data: examData, error: examError } = await supabase
@@ -85,7 +86,7 @@ const ExamsList = () => {
           .filter(exam => exam && exam.id)
           .map(exam => {
             // Find the matching assignment to get status
-            const assignment = assignments.find(a => a.exam_id === exam.id);
+            const assignment = assignments.find(a => a[examCandidateAssignmentColumns.examId] === exam.id);
             
             return {
               id: exam.id,

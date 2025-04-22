@@ -7,6 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 import ExamFilterControls from "./exams/ExamFilterControls";
 import ExamGrid from "./exams/ExamGrid";
+import { examCandidateAssignmentColumns } from "@/types/exam-candidate.types";
 
 interface Exam {
   id: string;
@@ -41,9 +42,9 @@ const Exams = () => {
           .select(`
             id,
             status,
-            exam_id
+            ${examCandidateAssignmentColumns.examId}
           `)
-          .eq('candidate_id', authState.user.id);
+          .eq(examCandidateAssignmentColumns.candidateId, authState.user.id);
           
         if (assignmentsError) {
           console.error('Error fetching exam assignments:', assignmentsError);
@@ -60,7 +61,7 @@ const Exams = () => {
         }
         
         // Extract exam IDs
-        const examIds = assignments.map(a => a.exam_id);
+        const examIds = assignments.map(a => a[examCandidateAssignmentColumns.examId]);
         
         // Fetch exam details
         const { data: examData, error: examError } = await supabase
@@ -89,7 +90,7 @@ const Exams = () => {
           .filter(item => item) // Filter out null exams
           .map(item => {
             // Find the corresponding assignment to get status
-            const assignment = assignments.find(a => a.exam_id === item.id);
+            const assignment = assignments.find(a => a[examCandidateAssignmentColumns.examId] === item.id);
             
             return {
               id: item.id,
