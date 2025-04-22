@@ -42,9 +42,9 @@ const Exams = () => {
           .select(`
             id,
             status,
-            ${examCandidateAssignmentColumns.examId}
+            exam_id
           `)
-          .eq(examCandidateAssignmentColumns.candidateId, authState.user.id);
+          .eq('candidate_id', authState.user.id);
           
         if (assignmentsError) {
           console.error('Error fetching exam assignments:', assignmentsError);
@@ -61,7 +61,7 @@ const Exams = () => {
         }
         
         // Extract exam IDs
-        const examIds = assignments.map(a => a[examCandidateAssignmentColumns.examId]);
+        const examIds = assignments.map(a => a.exam_id);
         
         // Fetch exam details
         const { data: examData, error: examError } = await supabase
@@ -90,7 +90,7 @@ const Exams = () => {
           .filter(item => item) // Filter out null exams
           .map(item => {
             // Find the corresponding assignment to get status
-            const assignment = assignments.find(a => a[examCandidateAssignmentColumns.examId] === item.id);
+            const assignment = assignments.find(a => a.exam_id === item.id);
             
             return {
               id: item.id,

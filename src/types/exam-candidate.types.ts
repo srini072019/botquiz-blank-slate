@@ -20,6 +20,6 @@ export const examCandidateAssignmentColumns = {
   examId: 'exam_id',
   candidateId: 'candidate_id',
   assignedAt: 'assigned_at',
-  status: 'status',
+  status: 'status', 
   createdAt: 'created_at'
 };

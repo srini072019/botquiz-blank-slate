@@ -1,7 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Exam, ExamFormData, ExamStatus } from "@/types/exam.types";
 import { toast } from "sonner";
-import { examCandidateAssignmentColumns } from "@/types/exam-candidate.types";
 
 export const fetchExamsFromApi = async (courseId?: string, instructorId?: string): Promise<Exam[]> => {
   try {
@@ -164,8 +163,8 @@ const assignExamToCandidates = async (examId: string, courseId: string, isPublis
     // First check if assignments already exist to avoid duplicates
     const { data: existingAssignments, error: checkError } = await supabase
       .from('exam_candidate_assignments')
-      .select(examCandidateAssignmentColumns.candidateId)
-      .eq(examCandidateAssignmentColumns.examId, examId);
+      .select('candidate_id')
+      .eq('exam_id', examId);
       
     if (checkError) {
       console.error("Error checking existing assignments:", checkError);
@@ -173,7 +172,7 @@ const assignExamToCandidates = async (examId: string, courseId: string, isPublis
     }
     
     // Filter out candidates that already have assignments
-    const existingCandidateIds = existingAssignments?.map(a => a[examCandidateAssignmentColumns.candidateId]) || [];
+    const existingCandidateIds = existingAssignments?.map(a => a.candidate_id) || [];
     console.log("Existing assignment candidate IDs:", existingCandidateIds);
     
     const newAssignments = enrollments
@@ -246,8 +245,8 @@ const assignExamToCandidates = async (examId: string, courseId: string, isPublis
       const { error: updateError } = await supabase
         .from('exam_candidate_assignments')
         .update({ status: 'pending' })
-        .eq(examCandidateAssignmentColumns.examId, examId)
-        .in(examCandidateAssignmentColumns.candidateId, existingCandidateIds);
+        .eq('exam_id', examId)
+        .in('candidate_id', existingCandidateIds);
         
       if (updateError) {
         console.error("Error updating existing assignments:", updateError);
