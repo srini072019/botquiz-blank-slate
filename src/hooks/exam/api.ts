@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Exam, ExamFormData, ExamStatus } from "@/types/exam.types";
 import { toast } from "sonner";
@@ -188,16 +187,6 @@ const assignExamToCandidates = async (examId: string, courseId: string, isPublis
     }
     
     console.log(`Creating ${newAssignments.length} new assignments with status: ${initialStatus}`, newAssignments);
-    
-    // Debug the database constraints
-    const { data: tableInfo, error: tableError } = await supabase
-      .rpc('get_table_definition', { table_name: 'exam_candidate_assignments' });
-    
-    if (tableError) {
-      console.error("Error fetching table definition:", tableError);
-    } else {
-      console.log("Table definition:", tableInfo);
-    }
     
     // Try batch insert first
     try {
