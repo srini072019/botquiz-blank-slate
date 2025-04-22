@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Exam, ExamFormData, ExamStatus } from "@/types/exam.types";
 import { toast } from "sonner";
@@ -150,12 +151,14 @@ const assignExamToCandidates = async (examId: string, courseId: string, isPublis
     const startDate = examData.start_date ? new Date(examData.start_date) : null;
     
     // Default to 'pending' if not published
-    let initialStatus = 'pending';
+    let initialStatus: 'pending' | 'scheduled' | 'available' | 'completed' = 'pending';
     
     // If published, set to 'available' or 'scheduled' based on start date
     if (isPublished) {
       initialStatus = startDate && startDate > now ? 'scheduled' : 'available';
     }
+    
+    console.log(`Using initial assignment status: ${initialStatus}`);
     
     // First check if assignments already exist to avoid duplicates
     const { data: existingAssignments, error: checkError } = await supabase
@@ -190,9 +193,10 @@ const assignExamToCandidates = async (examId: string, courseId: string, isPublis
     
     // Try batch insert first
     try {
-      const { error: assignmentError } = await supabase
+      const { data, error: assignmentError } = await supabase
         .from('exam_candidate_assignments')
-        .insert(newAssignments);
+        .insert(newAssignments)
+        .select();
       
       if (assignmentError) {
         console.error("Error assigning exam to candidates in batch:", assignmentError);
@@ -200,7 +204,7 @@ const assignExamToCandidates = async (examId: string, courseId: string, isPublis
         // Fall back to individual inserts
         throw assignmentError;
       } else {
-        console.log(`Exam successfully assigned to ${newAssignments.length} new candidates in batch`);
+        console.log(`Exam successfully assigned to ${newAssignments.length} new candidates in batch. Response:`, data);
       }
     } catch (batchError) {
       console.log("Falling back to individual assignment inserts");
