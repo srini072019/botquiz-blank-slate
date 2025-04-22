@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Exam, ExamFormData, ExamStatus } from "@/types/exam.types";
 import { toast } from "sonner";
@@ -150,21 +151,12 @@ const assignExamToCandidates = async (examId: string, courseId: string, isPublis
     const startDate = examData.start_date ? new Date(examData.start_date) : null;
     
     // Default to 'pending' if not published
-    let initialStatus = isPublished ? 'available' : 'pending';
+    let initialStatus = 'pending';
     
-    // If published and start date is in the future, set to 'scheduled'
-    if (isPublished && startDate && startDate > now) {
-      initialStatus = 'scheduled';
+    // If published, set to 'available' or 'scheduled' based on start date
+    if (isPublished) {
+      initialStatus = startDate && startDate > now ? 'scheduled' : 'available';
     }
-    
-    // Create assignments for each candidate
-    const assignments = enrollments.map(enrollment => ({
-      exam_id: examId,
-      candidate_id: enrollment.user_id,
-      status: initialStatus,
-    }));
-    
-    console.log(`Creating assignments with status: ${initialStatus} for ${enrollments.length} candidates`);
     
     // First check if assignments already exist to avoid duplicates
     const { data: existingAssignments, error: checkError } = await supabase
@@ -180,9 +172,15 @@ const assignExamToCandidates = async (examId: string, courseId: string, isPublis
     
     // Filter out candidates that already have assignments
     const existingCandidateIds = existingAssignments?.map(a => a.candidate_id) || [];
-    const newAssignments = assignments.filter(
-      a => !existingCandidateIds.includes(a.candidate_id)
-    );
+    console.log("Existing assignment candidate IDs:", existingCandidateIds);
+    
+    const newAssignments = enrollments
+      .filter(e => !existingCandidateIds.includes(e.user_id))
+      .map(enrollment => ({
+        exam_id: examId,
+        candidate_id: enrollment.user_id,
+        status: initialStatus,
+      }));
     
     if (newAssignments.length === 0) {
       console.log("All candidates already have assignments for this exam");
@@ -191,7 +189,17 @@ const assignExamToCandidates = async (examId: string, courseId: string, isPublis
     
     console.log(`Creating ${newAssignments.length} new assignments with status: ${initialStatus}`, newAssignments);
     
-    // Use individual insert calls if batch insert fails
+    // Debug the database constraints
+    const { data: tableInfo, error: tableError } = await supabase
+      .rpc('get_table_definition', { table_name: 'exam_candidate_assignments' });
+    
+    if (tableError) {
+      console.error("Error fetching table definition:", tableError);
+    } else {
+      console.log("Table definition:", tableInfo);
+    }
+    
+    // Try batch insert first
     try {
       const { error: assignmentError } = await supabase
         .from('exam_candidate_assignments')
@@ -199,6 +207,7 @@ const assignExamToCandidates = async (examId: string, courseId: string, isPublis
       
       if (assignmentError) {
         console.error("Error assigning exam to candidates in batch:", assignmentError);
+        console.log("Error details:", JSON.stringify(assignmentError));
         // Fall back to individual inserts
         throw assignmentError;
       } else {
@@ -206,18 +215,23 @@ const assignExamToCandidates = async (examId: string, courseId: string, isPublis
       }
     } catch (batchError) {
       console.log("Falling back to individual assignment inserts");
+      console.log("Batch error details:", batchError);
       
       // Try individual inserts
       let successCount = 0;
       for (const assignment of newAssignments) {
         try {
-          const { error } = await supabase
+          console.log("Attempting to insert assignment:", assignment);
+          const { data, error } = await supabase
             .from('exam_candidate_assignments')
-            .insert(assignment);
+            .insert(assignment)
+            .select();
             
           if (error) {
             console.error(`Error assigning exam to candidate ${assignment.candidate_id}:`, error);
+            console.log("Error details:", JSON.stringify(error));
           } else {
+            console.log("Successfully inserted assignment:", data);
             successCount++;
           }
         } catch (err) {
@@ -258,8 +272,11 @@ const assignExamToCandidates = async (examId: string, courseId: string, isPublis
       console.error("Error stack:", error.stack);
     }
     
+    // Check if the status constraint might be the issue
+    console.log("This might be due to an invalid status value. Check that the status values match the allowed values in the database constraint.");
+    
     // Check if user_id foreign key constraint might be the issue
-    console.log("This might be due to a foreign key constraint. Check that candidate_id values exist in the referenced table.");
+    console.log("This might also be due to a foreign key constraint. Check that candidate_id values exist in the referenced table.");
     
     toast.error("Failed to assign exam to candidates. Check console for details.");
   }
