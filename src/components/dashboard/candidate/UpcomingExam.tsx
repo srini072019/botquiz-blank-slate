@@ -8,7 +8,7 @@ interface UpcomingExamProps {
   course: string;
   date: string;
   duration: string;
-  status: 'scheduled' | 'available' | 'completed';
+  status: 'scheduled' | 'available' | 'completed' | 'pending';
   examId: string;
 }
 
@@ -21,6 +21,8 @@ const UpcomingExam = ({ title, course, date, duration, status, examId }: Upcomin
         return <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">Scheduled</span>;
       case 'completed':
         return <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full">Completed</span>;
+      case 'pending':
+        return <span className="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">Pending</span>;
       default:
         return null;
     }
@@ -52,6 +54,10 @@ const UpcomingExam = ({ title, course, date, duration, status, examId }: Upcomin
             asChild
           >
             <Link to={`/candidate/exams/${examId}`}>Take Exam</Link>
+          </Button>
+        ) : status === 'pending' ? (
+          <Button variant="outline" className="w-full" disabled>
+            Waiting for Instructor
           </Button>
         ) : status === 'scheduled' ? (
           <Button variant="outline" className="w-full" asChild>

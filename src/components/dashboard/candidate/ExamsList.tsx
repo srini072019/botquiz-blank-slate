@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
@@ -15,7 +16,7 @@ interface Exam {
   };
   time_limit: number;
   end_date: string;
-  status: 'scheduled' | 'available' | 'completed';
+  status: 'scheduled' | 'available' | 'completed' | 'pending';
 }
 
 const ExamsList = () => {
@@ -94,7 +95,7 @@ const ExamsList = () => {
               },
               time_limit: exam.time_limit,
               end_date: exam.end_date,
-              status: assignment?.status as 'scheduled' | 'available' | 'completed'
+              status: assignment?.status as 'scheduled' | 'available' | 'completed' | 'pending'
             };
           });
 

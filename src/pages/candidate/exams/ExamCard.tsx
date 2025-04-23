@@ -15,7 +15,7 @@ export interface ExamCardProps {
     questions_count: number;
     start_date?: string;
     end_date?: string;
-    status: 'available' | 'scheduled' | 'completed';
+    status: 'available' | 'scheduled' | 'completed' | 'pending';
   };
   now: Date;
 }
@@ -26,6 +26,9 @@ const ExamCard = ({ exam, now }: ExamCardProps) => {
   const getExamStatusBadge = () => {
     if (exam.status === 'completed') {
       return <Badge className="bg-gray-500">Completed</Badge>;
+    }
+    if (exam.status === 'pending') {
+      return <Badge className="bg-yellow-500">Pending</Badge>;
     }
     const startDate = exam.start_date ? new Date(exam.start_date) : null;
     const endDate = exam.end_date ? new Date(exam.end_date) : null;
@@ -74,17 +77,20 @@ const ExamCard = ({ exam, now }: ExamCardProps) => {
           onClick={() => navigate(`/candidate/exams/${exam.id}`)}
           disabled={
             exam.status === 'completed' ||
+            exam.status === 'pending' ||
             (exam.start_date && new Date(exam.start_date) > now) ||
             (exam.end_date && new Date(exam.end_date) < now)
           }
         >
           {exam.status === 'completed'
             ? "View Results"
-            : (exam.start_date && new Date(exam.start_date) > now)
-              ? "Not Available Yet"
-              : (exam.end_date && new Date(exam.end_date) < now)
-                ? "Exam Expired"
-                : "Take Exam"}
+            : exam.status === 'pending'
+              ? "Waiting for Instructor"
+              : (exam.start_date && new Date(exam.start_date) > now)
+                ? "Not Available Yet"
+                : (exam.end_date && new Date(exam.end_date) < now)
+                  ? "Exam Expired"
+                  : "Take Exam"}
         </Button>
       </CardFooter>
     </Card>

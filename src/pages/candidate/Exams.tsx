@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import CandidateLayout from "@/layouts/CandidateLayout";
 import { Loader2 } from "lucide-react";
@@ -6,7 +7,6 @@ import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 import ExamFilterControls from "./exams/ExamFilterControls";
 import ExamGrid from "./exams/ExamGrid";
-import { examCandidateAssignmentColumns } from "@/types/exam-candidate.types";
 
 interface Exam {
   id: string;
@@ -16,7 +16,7 @@ interface Exam {
   questions_count: number;
   start_date?: string;
   end_date?: string;
-  status: 'available' | 'scheduled' | 'completed';
+  status: 'available' | 'scheduled' | 'completed' | 'pending';
 }
 
 const Exams = () => {
@@ -99,7 +99,7 @@ const Exams = () => {
               questions_count: item.exam_questions?.length || 0,
               start_date: item.start_date,
               end_date: item.end_date,
-              status: assignment?.status as 'available' | 'scheduled' | 'completed'
+              status: assignment?.status as 'available' | 'scheduled' | 'completed' | 'pending'
             };
           });
 
@@ -130,7 +130,7 @@ const Exams = () => {
       if (filter === "available") {
         const isStarted = !startDate || startDate <= now;
         const isNotEnded = !endDate || endDate >= now;
-        return isStarted && isNotEnded && exam.status === 'available';
+        return (isStarted && isNotEnded && (exam.status === 'available' || exam.status === 'pending'));
       }
 
       if (filter === "past") {
