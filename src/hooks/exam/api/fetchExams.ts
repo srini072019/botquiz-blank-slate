@@ -7,7 +7,10 @@ export const fetchExamsFromApi = async (courseId?: string, instructorId?: string
   try {
     let query = supabase
       .from('exams')
-      .select('*, exam_questions(question_id, order_number)');
+      .select(`
+        *,
+        exam_questions:exam_questions(question_id, order_number)
+      `);
     
     if (courseId) {
       query = query.eq('course_id', courseId);

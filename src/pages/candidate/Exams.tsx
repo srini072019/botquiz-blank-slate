@@ -23,7 +23,7 @@ const Exams = () => {
   const { authState } = useAuth();
   const [exams, setExams] = useState<Exam[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"all" | "upcoming" | "available" | "past">("available");
+  const [filter, setFilter] = useState<"all" | "upcoming" | "available" | "past">("all");
 
   const now = new Date();
 
@@ -96,7 +96,7 @@ const Exams = () => {
               title: item.title,
               description: item.description || "",
               time_limit: item.time_limit,
-              questions_count: item.exam_questions?.length || 0,
+              questions_count: item.exam_questions.length || 0,
               start_date: item.start_date,
               end_date: item.end_date,
               status: assignment?.status as 'available' | 'scheduled' | 'completed' | 'pending'
