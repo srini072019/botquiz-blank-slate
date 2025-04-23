@@ -69,8 +69,12 @@ export const createExamInApi = async (data: ExamFormData): Promise<string | null
     
     try {
       // Assign exam to candidates for the course
-      await assignExamToCandidates(examData.id, data.courseId, data.status === 'published');
-      toast.success("Exam created successfully");
+      const result = await assignExamToCandidates(examData.id, data.courseId, data.status === 'published');
+      if (result.success) {
+        toast.success("Exam created successfully");
+      } else {
+        toast.warning(`Exam created but: ${result.message}`);
+      }
       return examData.id;
     } catch (assignmentError) {
       console.error("Error assigning exams:", assignmentError);

@@ -82,23 +82,25 @@ const ExamsList = () => {
         console.log("Raw exam data:", examData);
 
         // Combine exam data with assignment status
-        const formattedExams = examData
-          .filter(exam => exam && exam.id)
-          .map(exam => {
-            // Find the matching assignment to get status
-            const assignment = assignments.find(a => a.exam_id === exam.id);
-            
-            return {
-              id: exam.id,
-              title: exam.title,
-              course: {
-                title: exam.course?.title || "Untitled Course"
-              },
-              time_limit: exam.time_limit,
-              end_date: exam.end_date,
-              status: assignment?.status as 'scheduled' | 'available' | 'completed' | 'pending'
-            };
-          });
+        const formattedExams = examData && examData.length > 0 
+          ? examData
+            .filter(exam => exam && exam.id)
+            .map(exam => {
+              // Find the matching assignment to get status
+              const assignment = assignments.find(a => a.exam_id === exam.id);
+              
+              return {
+                id: exam.id,
+                title: exam.title,
+                course: {
+                  title: exam.course?.title || "Untitled Course"
+                },
+                time_limit: exam.time_limit,
+                end_date: exam.end_date,
+                status: assignment?.status as 'scheduled' | 'available' | 'completed' | 'pending'
+              };
+            })
+          : [];
 
         console.log("Formatted exams for candidate:", formattedExams);
         setExams(formattedExams);

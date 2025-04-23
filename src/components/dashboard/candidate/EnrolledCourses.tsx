@@ -7,6 +7,7 @@ import { useEnrollment } from "@/hooks/useEnrollment";
 import { Course } from "@/types/course.types";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface EnrolledCourseWithInstructor extends Course {
   instructorName: string;
@@ -15,40 +16,70 @@ interface EnrolledCourseWithInstructor extends Course {
 const EnrolledCourses = () => {
   const [courses, setCourses] = useState<EnrolledCourseWithInstructor[]>([]);
   const [loading, setLoading] = useState(true);
-  const { getEnrolledCourses } = useEnrollment();
+  const { authState } = useAuth();
 
   useEffect(() => {
     const fetchCourses = async () => {
+      if (!authState.user?.id) return;
+      
       try {
-        const enrolledCourses = await getEnrolledCourses();
+        setLoading(true);
+        console.log("Fetching enrolled courses for user:", authState.user.id);
         
-        // Fetch instructor names for each course
-        const coursesWithInstructors = await Promise.all(
-          enrolledCourses.map(async (course) => {
-            const { data: instructorData } = await supabase
-              .from('profiles')
-              .select('display_name')
-              .eq('id', course.instructorId)
-              .single();
+        // Directly fetch course enrollments with course details
+        const { data, error } = await supabase
+          .from('course_enrollments')
+          .select(`
+            course:course_id (
+              id,
+              title,
+              description,
+              image_url,
+              instructor_id,
+              is_published,
+              created_at,
+              updated_at,
+              profiles:instructor_id (
+                display_name
+              )
+            )
+          `)
+          .eq('user_id', authState.user.id);
 
-            return {
-              ...course,
-              instructorName: instructorData?.display_name || 'Unknown Instructor'
-            };
-          })
-        );
+        if (error) {
+          console.error("Error fetching enrolled courses:", error);
+          throw error;
+        }
 
-        setCourses(coursesWithInstructors);
+        console.log("Raw enrolled courses data:", data);
+        
+        // Transform the data into the required format
+        const formattedCourses: EnrolledCourseWithInstructor[] = (data || [])
+          .filter(item => item.course)
+          .map(({ course }) => ({
+            id: course.id,
+            title: course.title,
+            description: course.description || "",
+            imageUrl: course.image_url,
+            instructorId: course.instructor_id,
+            instructorName: course.profiles?.display_name || "Unknown Instructor",
+            isPublished: course.is_published,
+            createdAt: new Date(course.created_at),
+            updatedAt: new Date(course.updated_at)
+          }));
+
+        console.log("Formatted enrolled courses:", formattedCourses);
+        setCourses(formattedCourses);
       } catch (error) {
         console.error("Error fetching enrolled courses:", error);
-        setCourses([]);
+        toast.error("Failed to load enrolled courses");
       } finally {
         setLoading(false);
       }
     };
 
     fetchCourses();
-  }, []);
+  }, [authState.user?.id]);
 
   if (loading) {
     return (
@@ -60,10 +91,10 @@ const EnrolledCourses = () => {
 
   if (!courses || courses.length === 0) {
     return (
-      <div className="text-center py-12 bg-white rounded-lg shadow">
-        <h2 className="text-xl font-bold text-gray-900 mb-2">No Courses Available</h2>
-        <p className="text-gray-600 mb-4">You haven't been enrolled in any courses yet.</p>
-        <p className="text-gray-600">Please contact your instructor for enrollment.</p>
+      <div className="text-center py-12 bg-white rounded-lg shadow dark:bg-gray-800">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">No Courses Available</h2>
+        <p className="text-gray-600 dark:text-gray-400 mb-4">You haven't been enrolled in any courses yet.</p>
+        <p className="text-gray-600 dark:text-gray-400">Please contact your instructor for enrollment.</p>
       </div>
     );
   }
@@ -71,7 +102,7 @@ const EnrolledCourses = () => {
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold text-gray-900">Your Courses</h2>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white">Your Courses</h2>
         <Button variant="outline" asChild>
           <Link to="/candidate/courses">View All Courses</Link>
         </Button>

@@ -34,6 +34,11 @@ export const fetchExamsFromApi = async (courseId?: string, instructorId?: string
     
     console.log("Raw exams data:", data);
     
+    // If no data, return empty array
+    if (!data || data.length === 0) {
+      return [];
+    }
+    
     return data.map(exam => ({
       id: exam.id,
       title: exam.title,
