@@ -40,6 +40,7 @@ export const createExamInApi = async (data: ExamFormData): Promise<string | null
       console.log("Adding questions to exam:", data.questions);
       
       try {
+        // Prepare the questions data
         const examQuestions = data.questions.map((questionId, index) => ({
           exam_id: examData.id,
           question_id: questionId,
@@ -48,19 +49,21 @@ export const createExamInApi = async (data: ExamFormData): Promise<string | null
         
         console.log("Inserting exam questions:", examQuestions);
         
-        const { data: questionsData, error: questionsError } = await supabase
+        // Insert all exam questions
+        const { error: questionsError } = await supabase
           .from('exam_questions')
           .insert(examQuestions);
           
         if (questionsError) {
           console.error("Error adding questions to exam:", questionsError);
-          throw questionsError;
+          toast.warning("Exam created but there was an issue adding questions");
         } else {
           console.log(`Successfully added ${examQuestions.length} questions to exam.`);
         }
       } catch (questionInsertError) {
         console.error("Error during question insertion:", questionInsertError);
         // Continue despite error to at least create the exam
+        toast.warning("Exam created but there was an issue adding questions");
       }
     }
     

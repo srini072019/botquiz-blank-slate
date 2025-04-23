@@ -5,13 +5,17 @@ import { toast } from "sonner";
 
 export const fetchExamsFromApi = async (courseId?: string, instructorId?: string): Promise<Exam[]> => {
   try {
+    console.log("Fetching exams with courseId:", courseId, "instructorId:", instructorId);
+    
+    // First, construct the base query
     let query = supabase
       .from('exams')
       .select(`
         *,
-        exam_questions:exam_questions(question_id, order_number)
+        exam_questions(question_id, order_number)
       `);
     
+    // Add filters if provided
     if (courseId) {
       query = query.eq('course_id', courseId);
     }
@@ -20,9 +24,15 @@ export const fetchExamsFromApi = async (courseId?: string, instructorId?: string
       query = query.eq('instructor_id', instructorId);
     }
     
+    // Execute the query
     const { data, error } = await query;
     
-    if (error) throw error;
+    if (error) {
+      console.error("Error fetching exams:", error);
+      throw error;
+    }
+    
+    console.log("Raw exams data:", data);
     
     return data.map(exam => ({
       id: exam.id,

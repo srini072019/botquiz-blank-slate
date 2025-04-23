@@ -32,7 +32,7 @@ const ExamsList = () => {
         setLoading(true);
         console.log("Fetching exams for candidate ID:", authState.user.id);
 
-        // Fetch assignments for this candidate
+        // Fetch assignments for this candidate with more detailed logging
         const { data: assignments, error: assignmentsError } = await supabase
           .from('exam_candidate_assignments')
           .select(`
@@ -58,6 +58,7 @@ const ExamsList = () => {
 
         // Extract exam IDs from assignments
         const examIds = assignments.map(assignment => assignment.exam_id);
+        console.log("Exam IDs to fetch:", examIds);
         
         // Fetch exam details for these IDs
         const { data: examData, error: examError } = await supabase

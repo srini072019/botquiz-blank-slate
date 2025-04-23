@@ -32,7 +32,7 @@ export const assignExamToCandidates = async (
     // Get exam details to determine initial status
     const { data: examData, error: examError } = await supabase
       .from('exams')
-      .select('start_date, end_date')
+      .select('start_date, end_date, status')
       .eq('id', examId)
       .single();
       
@@ -49,7 +49,7 @@ export const assignExamToCandidates = async (
     let initialStatus = 'pending';
     
     // If published, set to 'available' or 'scheduled' based on start date
-    if (isPublished) {
+    if (isPublished || examData.status === 'published') {
       initialStatus = startDate && startDate > now ? 'scheduled' : 'available';
     }
     
@@ -76,13 +76,15 @@ export const assignExamToCandidates = async (
         exam_id: examId,
         candidate_id: enrollment.user_id,
         status: initialStatus,
+        assigned_at: new Date().toISOString(),
+        created_at: new Date().toISOString()
       }));
     
     if (newAssignments.length === 0) {
       console.log("All candidates already have assignments for this exam");
       
       // If exam is published, update existing assignments to the appropriate status
-      if (isPublished) {
+      if (isPublished || examData.status === 'published') {
         const { error: updateError } = await supabase
           .from('exam_candidate_assignments')
           .update({ status: initialStatus })
@@ -92,31 +94,30 @@ export const assignExamToCandidates = async (
           console.error("Error updating existing assignments:", updateError);
           return false;
         }
+        
+        console.log(`Successfully updated assignment status to ${initialStatus} for existing assignments`);
       }
       
       return true;
     }
     
     // Create new assignments
-    try {
-      console.log(`Creating ${newAssignments.length} new assignments with status: ${initialStatus}`);
-      const { error: insertError } = await supabase
-        .from('exam_candidate_assignments')
-        .insert(newAssignments);
-        
-      if (insertError) {
-        console.error("Error creating assignments:", insertError);
-        throw insertError;
-      }
+    console.log(`Creating ${newAssignments.length} new assignments with status: ${initialStatus}`);
+    console.log("Assignment data sample:", newAssignments[0]);
+    
+    const { error: insertError } = await supabase
+      .from('exam_candidate_assignments')
+      .insert(newAssignments);
       
-      console.log(`Successfully assigned exam to ${newAssignments.length} new candidates`);
-    } catch (error) {
-      console.error("Failed to create assignments:", error);
-      throw error;
+    if (insertError) {
+      console.error("Error creating assignments:", insertError);
+      throw insertError;
     }
     
+    console.log(`Successfully assigned exam to ${newAssignments.length} new candidates`);
+    
     // If exam is published, ensure all existing assignments have the correct status
-    if (isPublished && existingCandidateIds.length > 0) {
+    if ((isPublished || examData.status === 'published') && existingCandidateIds.length > 0) {
       const { error: updateError } = await supabase
         .from('exam_candidate_assignments')
         .update({ status: initialStatus })
@@ -127,6 +128,8 @@ export const assignExamToCandidates = async (
         console.error("Error updating existing assignments:", updateError);
         return false;
       }
+      
+      console.log(`Successfully updated status to ${initialStatus} for ${existingCandidateIds.length} existing assignments`);
     }
     
     return true;
