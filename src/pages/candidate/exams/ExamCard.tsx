@@ -30,6 +30,9 @@ const ExamCard = ({ exam, now }: ExamCardProps) => {
     if (exam.status === 'pending') {
       return <Badge className="bg-yellow-500">Pending</Badge>;
     }
+    if (exam.status === 'scheduled') {
+      return <Badge className="bg-blue-500">Scheduled</Badge>;
+    }
     const startDate = exam.start_date ? new Date(exam.start_date) : null;
     const endDate = exam.end_date ? new Date(exam.end_date) : null;
     if (startDate && startDate > now) {
@@ -78,6 +81,7 @@ const ExamCard = ({ exam, now }: ExamCardProps) => {
           disabled={
             exam.status === 'completed' ||
             exam.status === 'pending' ||
+            exam.status === 'scheduled' ||
             (exam.start_date && new Date(exam.start_date) > now) ||
             (exam.end_date && new Date(exam.end_date) < now)
           }
@@ -86,11 +90,13 @@ const ExamCard = ({ exam, now }: ExamCardProps) => {
             ? "View Results"
             : exam.status === 'pending'
               ? "Waiting for Instructor"
-              : (exam.start_date && new Date(exam.start_date) > now)
+              : exam.status === 'scheduled'
                 ? "Not Available Yet"
-                : (exam.end_date && new Date(exam.end_date) < now)
-                  ? "Exam Expired"
-                  : "Take Exam"}
+                : (exam.start_date && new Date(exam.start_date) > now)
+                  ? "Not Available Yet"
+                  : (exam.end_date && new Date(exam.end_date) < now)
+                    ? "Exam Expired"
+                    : "Take Exam"}
         </Button>
       </CardFooter>
     </Card>
