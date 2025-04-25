@@ -24,5 +24,5 @@ export interface ExamData {
   start_date: string | null;
   end_date: string | null;
   use_question_pool: boolean | null;
-  question_pool: string | null;
+  question_pool: any | null; // Changed from string to any to accommodate JSON type
 }
