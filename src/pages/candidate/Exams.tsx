@@ -14,8 +14,8 @@ interface Exam {
   description: string;
   time_limit: number;
   questions_count: number;
-  start_date?: string;
-  end_date?: string;
+  start_date?: string | null;
+  end_date?: string | null;
   status: 'available' | 'scheduled' | 'completed' | 'pending';
 }
 
@@ -107,7 +107,9 @@ const Exams = () => {
               
             if (!poolError && examPoolData && examPoolData.use_question_pool && examPoolData.question_pool) {
               try {
-                const poolData = JSON.parse(String(examPoolData.question_pool));
+                const poolData = typeof examPoolData.question_pool === 'string'
+                  ? JSON.parse(examPoolData.question_pool)
+                  : examPoolData.question_pool;
                 return { examId, count: poolData.totalQuestions || 0 };
               } catch (e) {
                 console.error("Error parsing question pool:", e);

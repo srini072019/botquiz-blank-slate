@@ -15,7 +15,7 @@ interface Exam {
     title: string;
   };
   time_limit: number;
-  end_date: string;
+  end_date: string | null;
   status: 'scheduled' | 'available' | 'completed' | 'pending';
 }
 
@@ -138,7 +138,7 @@ const ExamsList = () => {
               key={exam.id}
               title={exam.title}
               course={exam.course.title}
-              date={exam.end_date ? new Date(exam.end_date).toLocaleDateString() : ""}
+              date={exam.end_date ? new Date(exam.end_date).toLocaleDateString() : "No deadline"}
               duration={`${exam.time_limit} minutes`}
               status={exam.status}
               examId={exam.id}

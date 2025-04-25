@@ -13,8 +13,8 @@ export interface ExamCardProps {
     description: string;
     time_limit: number;
     questions_count: number;
-    start_date?: string;
-    end_date?: string;
+    start_date?: string | null;
+    end_date?: string | null;
     status: 'available' | 'scheduled' | 'completed' | 'pending';
   };
   now: Date;
