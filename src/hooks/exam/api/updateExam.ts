@@ -65,6 +65,49 @@ export const updateExamInApi = async (id: string, data: ExamFormData): Promise<b
       } else {
         console.log(`Successfully updated ${examQuestions.length} exam questions.`);
       }
+    } else if (data.useQuestionPool && data.questionPool) {
+      console.log("Using question pool. Pool configuration:", data.questionPool);
+      
+      // For preview purposes, let's fetch sample questions from the pool subjects
+      if (data.questionPool.subjects && data.questionPool.subjects.length > 0) {
+        const subjectIds = data.questionPool.subjects.map(subject => subject.subjectId);
+        
+        if (subjectIds.length > 0) {
+          console.log("Fetching sample questions from subject pool:", subjectIds);
+          
+          // Get questions from these subjects
+          const { data: poolQuestions, error: poolQuestionsError } = await supabase
+            .from('questions')
+            .select('id')
+            .in('subject_id', subjectIds)
+            .limit(data.questionPool.totalQuestions || 10);
+            
+          if (!poolQuestionsError && poolQuestions && poolQuestions.length > 0) {
+            console.log(`Found ${poolQuestions.length} questions for preview from pool subjects`);
+            
+            // Create exam questions entries for preview purposes
+            const examQuestions = poolQuestions.map((question, index) => ({
+              exam_id: id,
+              question_id: question.id,
+              order_number: index + 1
+            }));
+            
+            const { error: questionsError } = await supabase
+              .from('exam_questions')
+              .insert(examQuestions);
+              
+            if (questionsError) {
+              console.error("Error adding pool preview questions:", questionsError);
+            } else {
+              console.log(`Added ${examQuestions.length} preview questions from pool`);
+            }
+          } else if (poolQuestionsError) {
+            console.error("Error fetching pool questions:", poolQuestionsError);
+          } else {
+            console.log("No questions found in the selected subject pool");
+          }
+        }
+      }
     }
 
     // Update assignment statuses based on exam status
