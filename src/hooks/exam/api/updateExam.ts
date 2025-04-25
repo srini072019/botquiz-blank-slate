@@ -68,24 +68,28 @@ export const updateExamInApi = async (id: string, data: ExamFormData): Promise<b
     } else if (data.useQuestionPool && data.questionPool) {
       console.log("Using question pool. Pool configuration:", data.questionPool);
       
-      // For preview purposes, let's fetch sample questions from the pool subjects
+      // For actual exam questions with question pool, fetch and insert questions
       if (data.questionPool.subjects && data.questionPool.subjects.length > 0) {
         const subjectIds = data.questionPool.subjects.map(subject => subject.subjectId);
         
         if (subjectIds.length > 0) {
-          console.log("Fetching sample questions from subject pool:", subjectIds);
+          console.log("Fetching questions from subject pool:", subjectIds);
+          
+          // Calculate total questions needed
+          const totalNeeded = data.questionPool.totalQuestions || 
+                             data.questionPool.subjects.reduce((sum, s) => sum + s.count, 0);
           
           // Get questions from these subjects
           const { data: poolQuestions, error: poolQuestionsError } = await supabase
             .from('questions')
             .select('id')
             .in('subject_id', subjectIds)
-            .limit(data.questionPool.totalQuestions || 10);
+            .limit(totalNeeded);
             
           if (!poolQuestionsError && poolQuestions && poolQuestions.length > 0) {
-            console.log(`Found ${poolQuestions.length} questions for preview from pool subjects`);
+            console.log(`Found ${poolQuestions.length} questions for exam from pool subjects`);
             
-            // Create exam questions entries for preview purposes
+            // Create exam questions entries
             const examQuestions = poolQuestions.map((question, index) => ({
               exam_id: id,
               question_id: question.id,
@@ -97,14 +101,17 @@ export const updateExamInApi = async (id: string, data: ExamFormData): Promise<b
               .insert(examQuestions);
               
             if (questionsError) {
-              console.error("Error adding pool preview questions:", questionsError);
+              console.error("Error adding pool questions:", questionsError);
+              toast.warning("Exam updated but there was an issue adding questions from pool");
             } else {
-              console.log(`Added ${examQuestions.length} preview questions from pool`);
+              console.log(`Added ${examQuestions.length} questions from pool to exam`);
             }
           } else if (poolQuestionsError) {
             console.error("Error fetching pool questions:", poolQuestionsError);
+            toast.warning("Exam updated but couldn't fetch questions from the pool");
           } else {
             console.log("No questions found in the selected subject pool");
+            toast.warning("No questions found in the selected subject pool");
           }
         }
       }

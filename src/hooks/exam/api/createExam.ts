@@ -64,42 +64,49 @@ export const createExamInApi = async (data: ExamFormData): Promise<string | null
       
       if (data.questionPool.subjects && data.questionPool.subjects.length > 0) {
         // For preview purposes, let's fetch some sample questions from the pool subjects
-        // to populate the exam_questions table for preview functionality
         const subjectIds = data.questionPool.subjects.map(subject => subject.subjectId);
         
         if (subjectIds.length > 0) {
-          console.log("Fetching sample questions from subject pool:", subjectIds);
+          console.log("Fetching questions from subject pool:", subjectIds);
           
-          // Get questions from these subjects
+          // Get questions from these subjects with a limit based on pool configuration
+          const totalNeeded = data.questionPool.totalQuestions || 
+                             data.questionPool.subjects.reduce((sum, s) => sum + s.count, 0);
+          
           const { data: poolQuestions, error: poolQuestionsError } = await supabase
             .from('questions')
             .select('id')
             .in('subject_id', subjectIds)
-            .limit(data.questionPool.totalQuestions || 10);
+            .limit(totalNeeded);
             
           if (!poolQuestionsError && poolQuestions && poolQuestions.length > 0) {
-            console.log(`Found ${poolQuestions.length} questions for preview from pool subjects`);
+            console.log(`Found ${poolQuestions.length} questions from pool subjects`);
             
-            // Create exam questions entries for preview purposes
+            // Create exam questions entries for the actual exam
             const examQuestions = poolQuestions.map((question, index) => ({
               exam_id: examData.id,
               question_id: question.id,
               order_number: index + 1
             }));
             
+            console.log(`Adding ${examQuestions.length} questions to exam from pool`);
+            
             const { error: questionsError } = await supabase
               .from('exam_questions')
               .insert(examQuestions);
               
             if (questionsError) {
-              console.error("Error adding pool preview questions:", questionsError);
+              console.error("Error adding pool questions:", questionsError);
+              toast.warning("Exam created but there was an issue adding questions from pool");
             } else {
-              console.log(`Added ${examQuestions.length} preview questions from pool`);
+              console.log(`Successfully added ${examQuestions.length} questions from pool to exam.`);
             }
           } else if (poolQuestionsError) {
             console.error("Error fetching pool questions:", poolQuestionsError);
+            toast.warning("Exam created but couldn't fetch questions from the pool");
           } else {
             console.log("No questions found in the selected subject pool");
+            toast.warning("No questions found in the selected subject pool");
           }
         }
       }
