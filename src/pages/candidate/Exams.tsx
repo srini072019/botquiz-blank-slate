@@ -63,7 +63,7 @@ const Exams = () => {
         const examIds = assignments.map(a => a.exam_id);
         console.log("Exam IDs to fetch:", examIds);
         
-        // Fetch exam details with question counts
+        // Fetch exam details
         const { data: examData, error: examError } = await supabase
           .from('exams')
           .select(`
@@ -74,7 +74,8 @@ const Exams = () => {
             start_date,
             end_date
           `)
-          .in('id', examIds);
+          .in('id', examIds)
+          .eq('status', 'published'); // Only fetch published exams
           
         if (examError) {
           console.error("Error fetching exams:", examError);
@@ -96,6 +97,24 @@ const Exams = () => {
             return { examId, count: 0 };
           }
           
+          if (!questionsData || questionsData.length === 0) {
+            // Check if exam uses a question pool
+            const { data: examPoolData, error: poolError } = await supabase
+              .from('exams')
+              .select('use_question_pool, question_pool')
+              .eq('id', examId)
+              .single();
+              
+            if (!poolError && examPoolData && examPoolData.use_question_pool && examPoolData.question_pool) {
+              try {
+                const poolData = JSON.parse(String(examPoolData.question_pool));
+                return { examId, count: poolData.totalQuestions || 0 };
+              } catch (e) {
+                console.error("Error parsing question pool:", e);
+              }
+            }
+          }
+          
           return { examId, count: questionsData?.length || 0 };
         });
         
@@ -103,24 +122,26 @@ const Exams = () => {
         console.log("Question counts:", questionCounts);
         
         // Process the data
-        const processedExams = examData
-          .filter(item => item) // Filter out null exams
-          .map(item => {
-            // Find the corresponding assignment to get status
-            const assignment = assignments.find(a => a.exam_id === item.id);
-            const questionCount = questionCounts.find(q => q.examId === item.id)?.count || 0;
-            
-            return {
-              id: item.id,
-              title: item.title,
-              description: item.description || "",
-              time_limit: item.time_limit,
-              questions_count: questionCount,
-              start_date: item.start_date,
-              end_date: item.end_date,
-              status: assignment?.status as 'available' | 'scheduled' | 'completed' | 'pending'
-            };
-          });
+        const processedExams: Exam[] = examData && examData.length > 0
+          ? examData
+            .filter(item => item) // Filter out null exams
+            .map(item => {
+              // Find the corresponding assignment to get status
+              const assignment = assignments.find(a => a.exam_id === item.id);
+              const questionCount = questionCounts.find(q => q.examId === item.id)?.count || 0;
+              
+              return {
+                id: item.id,
+                title: item.title,
+                description: item.description || "",
+                time_limit: item.time_limit,
+                questions_count: questionCount,
+                start_date: item.start_date,
+                end_date: item.end_date,
+                status: assignment?.status as 'available' | 'scheduled' | 'completed' | 'pending'
+              };
+            })
+          : [];
 
         setExams(processedExams);
         console.log("Processed exams:", processedExams);

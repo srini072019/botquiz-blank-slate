@@ -1,7 +1,7 @@
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { toast } from "sonner";
@@ -84,6 +84,11 @@ const ExamForm = ({
     },
   });
 
+  useEffect(() => {
+    // Ensure the useQuestionPool form value is set when changed
+    form.setValue('useQuestionPool', useQuestionPool);
+  }, [useQuestionPool, form]);
+
   const { 
     selectedCourseId, 
     filteredQuestions, 
@@ -111,6 +116,14 @@ const ExamForm = ({
       toast.error("End date/time must be after start date/time");
       return;
     }
+
+    // Log the final form data that will be submitted
+    console.log("Submitting exam form data:", {
+      ...data,
+      useQuestionPool,
+      questionPool: useQuestionPool ? questionPool : undefined,
+      questions: !useQuestionPool ? data.questions : []
+    });
 
     if (useQuestionPool) {
       if (!questionPool) {

@@ -40,7 +40,8 @@ const InstructorLayout = ({ children }: InstructorLayoutProps) => {
   }
   
   if (!authState.isAuthenticated || authState.user?.role !== "instructor") {
-    return <Navigate to={ROUTES.LOGIN} />;
+    console.log("User not authenticated or not an instructor, redirecting to login");
+    return <Navigate to={ROUTES.LOGIN} replace />;
   }
 
   return (

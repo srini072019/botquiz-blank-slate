@@ -1,8 +1,7 @@
-
 import { RouteObject } from "react-router-dom";
 import Index from "@/pages/Index";
 import NotFound from "@/pages/NotFound";
-import Home from "@/pages/Home"; // Add import for Home
+import Home from "@/pages/Home";
 
 // Auth pages
 import Login from "@/pages/auth/Login";
@@ -19,7 +18,7 @@ import Questions from "@/pages/instructor/Questions";
 import Exams from "@/pages/instructor/Exams";
 import CreateExam from "@/pages/instructor/CreateExam";
 import EditExam from "@/pages/instructor/EditExam";
-import ExamPreview from "@/pages/instructor/ExamPreview"; // Add import for ExamPreview
+import ExamPreviewPage from "@/pages/instructor/ExamPreview";
 
 // Candidate pages
 import CandidateDashboard from "@/pages/candidate/Dashboard";
@@ -100,7 +99,7 @@ const routes: RouteObject[] = [
   },
   {
     path: "/instructor/exams/:examId/preview",
-    element: <ExamPreview />,
+    element: <ExamPreviewPage />,
   },
   
   // Candidate

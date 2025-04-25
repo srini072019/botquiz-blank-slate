@@ -5,23 +5,48 @@ import { useExams, useExam } from "@/hooks/useExams";
 import InstructorLayout from "@/layouts/InstructorLayout";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2 } from "lucide-react";
-import ExamPage from "@/pages/candidate/ExamPage";
+import { useCallback, useEffect, useState } from "react";
+import ExamPreview from "@/components/exam/ExamPreview";
+import { toast } from "sonner";
 
-const ExamPreview = () => {
+const ExamPreviewPage = () => {
   const { examId } = useParams<{ examId: string }>();
   const navigate = useNavigate();
-  const { questions } = useQuestions();
+  const { questions, fetchQuestions } = useQuestions();
   const { getExamWithQuestions } = useExams();
+  const [dataFetched, setDataFetched] = useState(false);
+  
+  // First fetch questions to ensure we have the latest data
+  useEffect(() => {
+    const loadInitialData = async () => {
+      if (!dataFetched) {
+        await fetchQuestions();
+        setDataFetched(true);
+      }
+    };
+    
+    loadInitialData();
+  }, [fetchQuestions, dataFetched]);
+  
+  // Then use the useExam hook to get exam details and questions
   const { exam, examQuestions, isLoading, error } = useExam(
     examId,
     getExamWithQuestions,
     questions
   );
 
-  console.log("ExamPreview - exam:", exam);
-  console.log("ExamPreview - examQuestions:", examQuestions);
+  const handleBackClick = useCallback(() => {
+    navigate("/instructor/exams");
+  }, [navigate]);
 
-  if (isLoading) {
+  console.log("ExamPreview - render with exam:", exam?.id);
+  console.log("ExamPreview - questions count:", examQuestions?.length);
+  
+  if (error) {
+    toast.error(error);
+  }
+
+  if (isLoading || !dataFetched) {
     return (
       <InstructorLayout>
         <div className="flex items-center justify-center h-64">
@@ -31,12 +56,12 @@ const ExamPreview = () => {
     );
   }
 
-  if (error || !exam) {
+  if (!exam) {
     return (
       <InstructorLayout>
         <div className="space-y-6">
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/instructor/exams")}>
+            <Button variant="ghost" size="icon" onClick={handleBackClick}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <h1 className="text-3xl font-bold">Exam Preview</h1>
@@ -44,7 +69,7 @@ const ExamPreview = () => {
           <div className="bg-white p-6 rounded-lg shadow-sm border">
             <p className="text-center text-red-500">Error: {error || "Exam not found"}</p>
             <div className="mt-6 flex justify-center">
-              <Button onClick={() => navigate("/instructor/exams")}>
+              <Button onClick={handleBackClick}>
                 Back to Exams
               </Button>
             </div>
@@ -58,7 +83,7 @@ const ExamPreview = () => {
     <InstructorLayout>
       <div className="space-y-6">
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/instructor/exams")}>
+          <Button variant="ghost" size="icon" onClick={handleBackClick}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <h1 className="text-3xl font-bold">Preview: {exam.title}</h1>
@@ -66,20 +91,25 @@ const ExamPreview = () => {
         
         <div className="bg-white p-4 rounded-lg shadow-sm border mb-4">
           <p className="text-amber-600 font-medium">
-            This is a preview of how candidates will see the exam. You can interact with the exam as if you were a candidate, but no results will be saved.
+            This is a preview of how the exam will appear to candidates.
           </p>
         </div>
         
-        {/* Pass the necessary props to ExamPage */}
-        <ExamPage 
-          isPreview={true} 
-          previewExamId={exam.id}
-          previewExam={exam}
-          previewExamQuestions={examQuestions}
+        {/* Use our ExamPreview component */}
+        <ExamPreview 
+          questions={examQuestions} 
+          useQuestionPool={exam.useQuestionPool}
+          totalPoolQuestions={exam.questionPool?.totalQuestions}
         />
+        
+        <div className="mt-6 flex justify-end">
+          <Button onClick={handleBackClick}>
+            Back to Exams
+          </Button>
+        </div>
       </div>
     </InstructorLayout>
   );
 };
 
-export default ExamPreview;
+export default ExamPreviewPage;

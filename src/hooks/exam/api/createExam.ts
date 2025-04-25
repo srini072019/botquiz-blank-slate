@@ -36,45 +36,38 @@ export const createExamInApi = async (data: ExamFormData): Promise<string | null
     console.log("Exam created:", examData);
     
     // Insert question associations if not using question pool
-    if (!data.useQuestionPool && data.questions.length > 0) {
+    if (!data.useQuestionPool && data.questions && data.questions.length > 0) {
       console.log("Adding questions to exam:", data.questions);
       
-      try {
-        // Prepare the questions data
-        const examQuestions = data.questions.map((questionId, index) => ({
-          exam_id: examData.id,
-          question_id: questionId,
-          order_number: index + 1,
-        }));
+      // Prepare the questions data with order numbers
+      const examQuestions = data.questions.map((questionId, index) => ({
+        exam_id: examData.id,
+        question_id: questionId,
+        order_number: index + 1 // Assign order based on array index
+      }));
+      
+      console.log("Inserting exam questions:", examQuestions);
+      
+      // Insert all exam questions
+      const { data: questionsData, error: questionsError } = await supabase
+        .from('exam_questions')
+        .insert(examQuestions);
         
-        console.log("Inserting exam questions:", examQuestions);
-        
-        // Insert all exam questions
-        const { error: questionsError } = await supabase
-          .from('exam_questions')
-          .insert(examQuestions);
-          
-        if (questionsError) {
-          console.error("Error adding questions to exam:", questionsError);
-          toast.warning("Exam created but there was an issue adding questions");
-        } else {
-          console.log(`Successfully added ${examQuestions.length} questions to exam.`);
-        }
-      } catch (questionInsertError) {
-        console.error("Error during question insertion:", questionInsertError);
-        // Continue despite error to at least create the exam
+      if (questionsError) {
+        console.error("Error adding questions to exam:", questionsError);
         toast.warning("Exam created but there was an issue adding questions");
+      } else {
+        console.log(`Successfully added ${examQuestions.length} questions to exam.`);
       }
+    } else if (data.useQuestionPool) {
+      console.log("Using question pool. Questions will be selected dynamically at exam time.");
+    } else {
+      console.log("No questions provided for exam");
     }
     
     try {
-      // Assign exam to candidates for the course
-      const result = await assignExamToCandidates(examData.id, data.courseId, data.status === 'published');
-      if (result.success) {
-        toast.success("Exam created successfully");
-      } else {
-        toast.warning(`Exam created but: ${result.message}`);
-      }
+      await assignExamToCandidates(examData.id, data.courseId, data.status === 'published');
+      toast.success("Exam created successfully");
       return examData.id;
     } catch (assignmentError) {
       console.error("Error assigning exams:", assignmentError);

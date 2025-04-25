@@ -171,9 +171,15 @@ export const useExams = (courseId?: string): UseExamsResult => {
     }
     
     // Filter questions that are associated with this exam
-    const examQuestions = questionsList.filter(q => 
-      exam.questions.includes(q.id)
-    );
+    let examQuestions: Question[] = [];
+    
+    if (exam.questions && exam.questions.length > 0) {
+      // Use existing question IDs from the exam object
+      examQuestions = questionsList.filter(q => exam.questions.includes(q.id));
+    } else {
+      // If no questions on the exam object, try to fetch them from the database
+      console.log("No questions found on exam object, will fetch from database in useExam hook");
+    }
     
     return { exam, examQuestions };
   };

@@ -32,7 +32,7 @@ const ExamsList = () => {
         setLoading(true);
         console.log("Fetching exams for candidate ID:", authState.user.id);
 
-        // Fetch assignments for this candidate with more detailed logging
+        // Fetch assignments for this candidate
         const { data: assignments, error: assignmentsError } = await supabase
           .from('exam_candidate_assignments')
           .select(`
@@ -68,11 +68,10 @@ const ExamsList = () => {
             title,
             time_limit,
             end_date,
-            course:courses (
-              title
-            )
+            course:courses(title)
           `)
-          .in('id', examIds);
+          .in('id', examIds)
+          .eq('status', 'published'); // Only fetch published exams
 
         if (examError) {
           console.error('Error fetching exam details:', examError);

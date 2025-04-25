@@ -8,6 +8,7 @@ import { Course } from "@/types/course.types";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext"; // Added the missing import
 
 interface EnrolledCourseWithInstructor extends Course {
   instructorName: string;

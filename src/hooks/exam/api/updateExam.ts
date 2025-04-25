@@ -6,6 +6,8 @@ import { assignExamToCandidates } from './assignCandidates';
 
 export const updateExamInApi = async (id: string, data: ExamFormData): Promise<boolean> => {
   try {
+    console.log("Updating exam with ID:", id, "and data:", data);
+    
     // Update exam record
     const { error: examError } = await supabase
       .from('exams')
@@ -25,7 +27,10 @@ export const updateExamInApi = async (id: string, data: ExamFormData): Promise<b
       })
       .eq('id', id);
 
-    if (examError) throw examError;
+    if (examError) {
+      console.error("Error updating exam:", examError);
+      throw examError;
+    }
     
     // Delete all existing question associations
     const { error: deleteError } = await supabase
@@ -33,21 +38,33 @@ export const updateExamInApi = async (id: string, data: ExamFormData): Promise<b
       .delete()
       .eq('exam_id', id);
       
-    if (deleteError) throw deleteError;
+    if (deleteError) {
+      console.error("Error deleting existing exam questions:", deleteError);
+      throw deleteError;
+    }
     
     // Insert new question associations if not using question pool
-    if (!data.useQuestionPool && data.questions.length > 0) {
+    if (!data.useQuestionPool && data.questions && data.questions.length > 0) {
+      console.log("Updating exam questions for exam:", id, "with questions:", data.questions);
+      
       const examQuestions = data.questions.map((questionId, index) => ({
         exam_id: id,
         question_id: questionId,
-        order_number: index + 1,
+        order_number: index + 1 // Maintain question order
       }));
+      
+      console.log("Inserting exam questions:", examQuestions);
       
       const { error: questionsError } = await supabase
         .from('exam_questions')
         .insert(examQuestions);
         
-      if (questionsError) throw questionsError;
+      if (questionsError) {
+        console.error("Error updating exam questions:", questionsError);
+        toast.warning("Exam updated but there was an issue updating questions");
+      } else {
+        console.log(`Successfully updated ${examQuestions.length} exam questions.`);
+      }
     }
 
     // Update assignment statuses based on exam status
