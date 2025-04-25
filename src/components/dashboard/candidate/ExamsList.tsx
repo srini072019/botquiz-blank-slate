@@ -68,7 +68,7 @@ const ExamsList = () => {
             title,
             time_limit,
             end_date,
-            course:courses(title)
+            courses:course_id (title)
           `)
           .in('id', examIds)
           .eq('status', 'published'); // Only fetch published exams
@@ -92,7 +92,7 @@ const ExamsList = () => {
                 id: exam.id,
                 title: exam.title,
                 course: {
-                  title: exam.course?.title || "Untitled Course"
+                  title: exam.courses?.title || "Untitled Course"
                 },
                 time_limit: exam.time_limit,
                 end_date: exam.end_date,

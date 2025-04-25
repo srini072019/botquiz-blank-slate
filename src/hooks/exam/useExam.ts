@@ -123,9 +123,44 @@ export const useExam = (
           const questionIds = questionLinks.map(q => q.question_id);
           transformedExam.questions = questionIds;
           
-          // Find matching questions in our questions array
-          foundQuestions = questions.filter(q => questionIds.includes(q.id));
-          console.log(`Found ${foundQuestions.length} questions from database`);
+          // If we have question IDs but no questions array, fetch them directly
+          if (questionIds.length > 0 && (!questions || questions.length === 0)) {
+            console.log("Fetching questions directly from the database");
+            const { data: questionsData, error: fetchQuestionsError } = await supabase
+              .from('questions')
+              .select(`
+                id, 
+                text, 
+                type, 
+                difficulty_level,
+                explanation,
+                question_options (id, text, is_correct)
+              `)
+              .in('id', questionIds);
+              
+            if (fetchQuestionsError) {
+              console.error("Error fetching questions:", fetchQuestionsError);
+            } else if (questionsData) {
+              foundQuestions = questionsData.map(q => ({
+                id: q.id,
+                text: q.text,
+                type: q.type,
+                difficultyLevel: q.difficulty_level,
+                explanation: q.explanation || undefined,
+                options: q.question_options.map(o => ({
+                  id: o.id,
+                  text: o.text,
+                  isCorrect: o.is_correct
+                })),
+                subjectId: '', // We don't need this for preview
+              }));
+              console.log(`Fetched ${foundQuestions.length} questions directly from DB`);
+            }
+          } else {
+            // Find matching questions in our questions array
+            foundQuestions = questions.filter(q => questionIds.includes(q.id));
+            console.log(`Found ${foundQuestions.length} questions from local state`);
+          }
         } else {
           console.log("No questions found in database for this exam");
           
@@ -138,21 +173,48 @@ export const useExam = (
               transformedExam.questionPool.subjects.map(subject => subject.subjectId) : [];
             
             if (poolSubjectIds.length > 0) {
-              // Filter available questions to just those from subjects in the pool
-              const availablePoolQuestions = questions.filter(q => 
-                poolSubjectIds.includes(q.subjectId)
-              );
-              
-              console.log(`Found ${availablePoolQuestions.length} available questions from pool subjects`);
-              
-              // Take up to the specified number of questions for preview
-              const totalQuestionsNeeded = transformedExam.questionPool.totalQuestions || 
-                (transformedExam.questionPool.subjects ? 
-                  transformedExam.questionPool.subjects.reduce((sum, s) => sum + s.count, 0) : 0);
+              // Fetch questions directly from database based on subject IDs
+              const { data: poolQuestions, error: poolError } = await supabase
+                .from('questions')
+                .select(`
+                  id, 
+                  text, 
+                  type, 
+                  difficulty_level,
+                  explanation,
+                  subject_id,
+                  question_options (id, text, is_correct)
+                `)
+                .in('subject_id', poolSubjectIds);
                 
-              foundQuestions = availablePoolQuestions.slice(0, totalQuestionsNeeded);
-              
-              console.log(`Selected ${foundQuestions.length} questions from pool for preview`);
+              if (poolError) {
+                console.error("Error fetching pool questions:", poolError);
+              } else if (poolQuestions && poolQuestions.length > 0) {
+                console.log(`Found ${poolQuestions.length} questions from pool subjects`);
+                
+                // Transform questions to our Question type
+                const availablePoolQuestions = poolQuestions.map(q => ({
+                  id: q.id,
+                  text: q.text,
+                  type: q.type,
+                  difficultyLevel: q.difficulty_level,
+                  explanation: q.explanation || undefined,
+                  subjectId: q.subject_id,
+                  options: q.question_options.map(o => ({
+                    id: o.id,
+                    text: o.text,
+                    isCorrect: o.is_correct
+                  }))
+                }));
+                
+                // Take up to the specified number of questions for preview
+                const totalQuestionsNeeded = transformedExam.questionPool.totalQuestions || 
+                  (transformedExam.questionPool.subjects ? 
+                    transformedExam.questionPool.subjects.reduce((sum, s) => sum + s.count, 0) : 0);
+                  
+                foundQuestions = availablePoolQuestions.slice(0, totalQuestionsNeeded);
+                console.log(`Selected ${foundQuestions.length} questions from pool for preview`);
+              }
             }
           }
         }
