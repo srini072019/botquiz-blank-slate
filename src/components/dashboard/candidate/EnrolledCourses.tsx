@@ -39,7 +39,9 @@ const EnrolledCourses = () => {
               description,
               image_url,
               instructor_id,
-              profiles:instructor_id (full_name)
+              profiles:instructor_id (
+                display_name
+              )
             )
           `)
           .eq('user_id', authState.user.id);
@@ -56,7 +58,7 @@ const EnrolledCourses = () => {
               id: item.courses?.id || 'unknown',
               title: item.courses?.title || 'Unknown Course',
               description: item.courses?.description || 'No description available',
-              instructorName: item.courses?.profiles?.full_name || 'Unknown Instructor',
+              instructorName: item.courses?.profiles?.display_name || 'Unknown Instructor',
               imageUrl: item.courses?.image_url || undefined,
             }));
           
