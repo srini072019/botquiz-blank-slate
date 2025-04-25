@@ -1,3 +1,4 @@
+
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -6,21 +7,30 @@ import { Progress } from "@/components/ui/progress";
 
 interface EnrolledCourseProps {
   title: string;
-  instructor: string;
-  progress: number;
+  description: string;
+  instructorName: string;
+  imageUrl?: string;
+  progress?: number;
   nextExam?: {
     title: string;
     date: string;
   };
 }
 
-const EnrolledCourse = ({ title, instructor, progress, nextExam }: EnrolledCourseProps) => {
+const EnrolledCourse = ({ 
+  title, 
+  description, 
+  instructorName, 
+  imageUrl, 
+  progress = 0, 
+  nextExam 
+}: EnrolledCourseProps) => {
   return (
     <Card className="p-6">
       <div className="flex items-start justify-between">
         <div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{title}</h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Instructor: {instructor}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Instructor: {instructorName}</p>
         </div>
         <Button variant="outline" size="sm" asChild>
           <Link to="#">View Course</Link>

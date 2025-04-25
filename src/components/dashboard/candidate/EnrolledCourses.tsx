@@ -1,11 +1,12 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import EnrolledCourse from "./EnrolledCourse";
 import { Loader2 } from "lucide-react";
-import { useAuth } from "@/context/AuthContext"; // Fixed import
+import { useAuth } from "@/context/AuthContext";
 
-interface EnrolledCourse {
+interface EnrolledCourseData {
   id: string;
   title: string;
   description: string;
@@ -14,9 +15,9 @@ interface EnrolledCourse {
 }
 
 const EnrolledCourses = () => {
-  const [courses, setCourses] = useState<EnrolledCourse[]>([]);
+  const [courses, setCourses] = useState<EnrolledCourseData[]>([]);
   const [loading, setLoading] = useState(true);
-  const { authState } = useAuth(); // Use the imported useAuth hook
+  const { authState } = useAuth();
 
   useEffect(() => {
     const fetchEnrolledCourses = async () => {
@@ -27,20 +28,21 @@ const EnrolledCourses = () => {
 
       setLoading(true);
       try {
+        // Query the course_enrollments table to get courses the user is enrolled in
         const { data, error } = await supabase
-          .from('candidate_courses')
+          .from('course_enrollments')
           .select(`
-            course (
+            course_id,
+            courses:course_id (
               id,
               title,
               description,
               image_url,
               instructor_id,
-              instructor:profiles(full_name)
+              profiles:instructor_id (full_name)
             )
           `)
-          .eq('candidate_id', authState.user.id)
-          .eq('is_enrolled', true);
+          .eq('user_id', authState.user.id);
 
         if (error) {
           console.error("Error fetching enrolled courses:", error);
@@ -48,13 +50,16 @@ const EnrolledCourses = () => {
         }
 
         if (data) {
-          const enrolledCourses: EnrolledCourse[] = data.map(item => ({
-            id: item.course?.id || 'unknown',
-            title: item.course?.title || 'Unknown Course',
-            description: item.course?.description || 'No description available',
-            instructorName: item.course?.instructor?.full_name || 'Unknown Instructor',
-            imageUrl: item.course?.image_url || undefined,
-          }));
+          const enrolledCourses: EnrolledCourseData[] = data
+            .filter(item => item.courses) // Filter out any null courses
+            .map(item => ({
+              id: item.courses?.id || 'unknown',
+              title: item.courses?.title || 'Unknown Course',
+              description: item.courses?.description || 'No description available',
+              instructorName: item.courses?.profiles?.full_name || 'Unknown Instructor',
+              imageUrl: item.courses?.image_url || undefined,
+            }));
+          
           setCourses(enrolledCourses);
         }
       } catch (error) {
@@ -86,7 +91,6 @@ const EnrolledCourses = () => {
             {courses.map((course) => (
               <EnrolledCourse
                 key={course.id}
-                id={course.id}
                 title={course.title}
                 description={course.description}
                 instructorName={course.instructorName}
