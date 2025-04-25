@@ -134,6 +134,8 @@ export const useExam = (
                 type, 
                 difficulty_level,
                 explanation,
+                created_at,
+                updated_at,
                 question_options (id, text, is_correct)
               `)
               .in('id', questionIds);
@@ -153,6 +155,8 @@ export const useExam = (
                   isCorrect: o.is_correct
                 })),
                 subjectId: '', // We don't need this for preview
+                createdAt: new Date(q.created_at),
+                updatedAt: new Date(q.updated_at)
               }));
               console.log(`Fetched ${foundQuestions.length} questions directly from DB`);
             }
@@ -183,6 +187,8 @@ export const useExam = (
                   difficulty_level,
                   explanation,
                   subject_id,
+                  created_at,
+                  updated_at,
                   question_options (id, text, is_correct)
                 `)
                 .in('subject_id', poolSubjectIds);
@@ -200,6 +206,8 @@ export const useExam = (
                   difficultyLevel: q.difficulty_level,
                   explanation: q.explanation || undefined,
                   subjectId: q.subject_id,
+                  createdAt: new Date(q.created_at),
+                  updatedAt: new Date(q.updated_at),
                   options: q.question_options.map(o => ({
                     id: o.id,
                     text: o.text,
