@@ -4,6 +4,7 @@ import { Exam, ExamStatus } from "@/types/exam.types";
 import { Question } from "@/types/question.types";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { mapToDifficultyLevel, mapToQuestionType } from "@/utils/questionUtils";
 
 interface UseExamResult {
   exam: Exam | null;
@@ -146,8 +147,8 @@ export const useExam = (
               foundQuestions = questionsData.map(q => ({
                 id: q.id,
                 text: q.text,
-                type: q.type,
-                difficultyLevel: q.difficulty_level,
+                type: mapToQuestionType(q.type),
+                difficultyLevel: mapToDifficultyLevel(q.difficulty_level),
                 explanation: q.explanation || undefined,
                 options: q.question_options.map(o => ({
                   id: o.id,
@@ -202,8 +203,8 @@ export const useExam = (
                 const availablePoolQuestions = poolQuestions.map(q => ({
                   id: q.id,
                   text: q.text,
-                  type: q.type,
-                  difficultyLevel: q.difficulty_level,
+                  type: mapToQuestionType(q.type),
+                  difficultyLevel: mapToDifficultyLevel(q.difficulty_level),
                   explanation: q.explanation || undefined,
                   subjectId: q.subject_id,
                   createdAt: new Date(q.created_at),
